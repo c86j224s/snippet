@@ -20,4 +20,24 @@ for each_td in tds:
   title = each_td.a.span.string
   if "720p-WITH" not in title and "720P-WITH" not in title:
     continue
+  print("################################################################################")
   print(str.format("{} : {}", title, url))
+  print("################################################################################")
+  params = url[url.find("?")+1:]
+  print(params)
+  conn.request("GET", "/bbs/download.php?" + params, headers={
+    "Host": "torrentlee.net",
+    "Connection": "keep-alive",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Upgrade-Insecure-Requests": "1",
+    "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.71 Safari/537.36",
+    "Referer": url,
+    "Accept-Encoding": "gzip, deflate, sdch",
+    "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
+    "Cookie": "__cfduid=d39001f668d9d6086cc08b8f3158cd9f61444609863; PHPSESSID=slm0bintfqnkf5j6dq8i39clp3; f33d2ed86bd82d4c22123c9da444d8ab=MTQ0NDYwOTU2OA%3D%3D; 96b28b766b7e0699aa91c9ff3d890663=aHR0cDovL3RvcnJlbnRsZWUubmV0Lw%3D%3D; wcs_bt=e053f97fe46850:1444904710"
+
+  })
+  r2 = conn.getresponse()
+  print(r2.getheaders())
+  data2 = r2.read().decode("utf8")
+  print(data2)
