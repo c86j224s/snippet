@@ -5,21 +5,54 @@
 # HISTORY:
 #  2016-05-10, newly created torrent.py, added QBittorrent, TorrentKim3Net, Nas classes.
 #  2016-05-11, implement QBitTorrent.getlist, getcompletedone, delete, TorrentKim3Net.copy
+#  2016-05-12, add TorrentKim3Net.filtersubject
 
 
 import requests
 import json
 from bs4 import BeautifulSoup as Soup
+import sqlalchemy
 from pprint import pprint
 import os
 import hashlib
 import shutil
 
 
+# TODO split downloadpolicy to local configuration file
 downloadpolicy = {
-	'냉장고를 ': {title: '냉장고를 부탁해', filterkeywords: ['720p', 'WITH']},
-	'조들호': {title: '동네변호사 조들호', filterkeywords: ['720p', 'WITH']},
-	'마녀의': {title: '마녀의 성', filterkeywords: ['WITH']},
+	'냉장고를 부탁해': {
+		'filterkeywords': ['냉장고를', '부탁해', '720p', 'WITH'],
+	},
+	'동네변호사 조들호': {
+		'filterkeywords': ['동네', '변호사', '조들호', '720p', 'WITH'],
+	},
+	'마녀의 성': {
+		'filterkeywords': ['마녀의', '성', 'WITH'],
+	},
+	'마스터 국수의 신': {
+		'filterkeywords': ['국수의', '신', '720p', 'WITH'],
+	},
+	'굿바이 미스터 블랙': {
+		'filterkeywords': ['굿바이', '미스터', '블랙', '720p', 'WITH'],
+	},
+	'몬스터': {
+		'filterkeywords': ['몬스터', '720p', 'WITH'],
+	},
+	'옥중화': {
+		'filterkeywords': ['옥중화', '720p', 'WITH'],
+	},
+	'뱀파이어 탐정': {
+		'filterkeywords': ['뱀파이어', '탐정', '720p', 'WITH'],
+	},
+	'딴따라': {
+		'filterkeywords': ['딴따라', '720p', 'WITH'],
+	},
+	'보컬전쟁 신의 목소리': {
+		'filterkeywords': ['보컬', '전쟁', '신의', '목소리', '720p', 'WITH'],
+	},
+	'노래의 탄생': {
+		'filterkeywords': ['노래의', '탄생', '720p', 'WITH'],
+	},
 }
 
 
@@ -48,7 +81,7 @@ class QBittorrent:
 	def getlist(self, filter='all'):
 		r = requests.get(
 			cookies=self.cookies,
-			url=self.addr + 'query/torrents'
+			url=self.addr + 'query/torrents',
 			params={'filter':filter}
 			)
 		if r.status_code != 200:
@@ -61,7 +94,7 @@ class QBittorrent:
 				'name':each['name'],
 				'progress':each['progress'],
 				'state':each['state']
-			}
+			}]
 		return ret_list
 
 	def download(self, magnet):
@@ -93,6 +126,7 @@ class TorrentKim3Net:
 	addr = 'https://torrentkim3.net/'
 	res_tvdrama = 'bbs/bc.php?bo_table=torrent_tv'
 	res_variety = 'bbs/bc.php?bo_table=torrent_variety'
+	downloadpolicy = downloadpolicy
 
 	def __init__(self):
 		pass
@@ -126,6 +160,20 @@ class TorrentKim3Net:
 	def getlist_variety(self):
 		return self.getlist(self.res_variety)
 
+	def filtersubject(self, subject):
+		for vid in self.downloadpolicy:
+			matched = functools.reduce(
+				lambda x, y: x and y,
+				map(
+					lambda keyw: 
+						keyw in subject,
+					self.downloadpolicy[vid]['filterkeywords']
+					)
+				)
+			if matched:
+				return True
+		return False
+
 	def getmagnetfrom(self, articlehref):
 		url = self.addr + articlehref.replace('../', '')
 		r = requests.get(url=url)
@@ -158,7 +206,7 @@ class Nas:
 			dstchecksum = None
 			with open(srcpath, 'r') as f:
 				srcchecksum = hashlib.md5(f.read()).hexdigest()
-			shutil.copy(srcpath, dstpath)
+			shutil.copyfile(srcpath, dstpath)
 			with open(srcpath, 'r') as f:
 				dstchecksum = hashlib.md5(f.read()).hexdigest()
 			if srcchecksum != dstchecksum:
@@ -168,7 +216,7 @@ class Nas:
 		return True
 
 
-if __name__ == '__main__':1
+if __name__ == '__main__':
 	q = QBittorrent()
 	q.auth()
 
