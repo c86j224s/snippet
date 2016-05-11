@@ -4,7 +4,7 @@
 
 # HISTORY:
 #  2016-05-10, newly created torrent.py, added QBittorrent, TorrentKim3Net, Nas classes.
-
+#  2016-05-11, implement QBitTorrent.getlist, getcompletedone, delete, TorrentKim3Net.copy
 
 
 import requests
@@ -12,6 +12,8 @@ import json
 from bs4 import BeautifulSoup as Soup
 from pprint import pprint
 import os
+import hashlib
+import shutil
 
 
 downloadpolicy = {
@@ -23,6 +25,8 @@ downloadpolicy = {
 
 class QBittorrent:
 	addr = 'http://127.0.0.1:6600/'
+	user = os.environ['qt_user']
+	pwd = os.environ['qt_pwd']
 
 	def __init__(self):
 		self.cookies = None
@@ -32,7 +36,7 @@ class QBittorrent:
 
 	def auth(self):
 		r = requests.post(
-			data={'username':'admin', 'password':'asdfdddd1234'},
+			data={'username':self.user, 'password':self.pwd},
 			url=self.addr + 'login'
 			)
 		if r.status_code != 200:
@@ -41,14 +45,24 @@ class QBittorrent:
 		self.cookies = r.cookies
 		return True
 
-	def getlist(self):
+	def getlist(self, filter='all'):
 		r = requests.get(
 			cookies=self.cookies,
 			url=self.addr + 'query/torrents'
+			params={'filter':filter}
 			)
 		if r.status_code != 200:
-			return None
-		return r.json()
+			return []
+		response = json.loads(r.content.decode('utf-8'))
+		ret_list = []
+		for each in response:
+			ret_list += [{
+				'hash':each['hash'],
+				'name':each['name'],
+				'progress':each['progress'],
+				'state':each['state']
+			}
+		return ret_list
 
 	def download(self, magnet):
 		r = requests.post(
@@ -61,13 +75,18 @@ class QBittorrent:
 		return True
 
 	def getcompletedone(self):
-		# TODO return 1 completed torrent hash and files list
-		pass
+		completed = getlist(filter='completed')
+		if len(completed) == 0:
+			return None
+		return completed[0]
 
 	def delete(self, hash):
-		# TODO delete torrent and files by torrent hash
-		pass
-
+		r = requests.post(
+			cookies=self.cookies,
+			data={'hashes':hash},
+			url=self.addr + 'command/delete'
+		)
+		return True if r.status == 200 else False
 
 
 class TorrentKim3Net:
@@ -134,13 +153,22 @@ class Nas:
 		# TODO check return value
 
 	def copy(self, srcpath, dstpath):
-		# TODO check md5 checksum of srcpath
-		# TODO copy from srcpath to dstpath
-		# TODO check md5 checksum of dstpath
-		pass
+		try:
+			srcchecksum = None
+			dstchecksum = None
+			with open(srcpath, 'r') as f:
+				srcchecksum = hashlib.md5(f.read()).hexdigest()
+			shutil.copy(srcpath, dstpath)
+			with open(srcpath, 'r') as f:
+				dstchecksum = hashlib.md5(f.read()).hexdigest()
+			if srcchecksum != dstchecksum:
+				return False
+		except:
+			return False
+		return True
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':1
 	q = QBittorrent()
 	q.auth()
 
