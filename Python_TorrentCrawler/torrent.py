@@ -1,5 +1,5 @@
 #!/usr/bin/env python3 
-# -*- coding: utf-8 -*-
+# -*- encoding:utf8 -*-
 
 
 # HISTORY:
@@ -12,124 +12,23 @@ import requests
 import json
 from bs4 import BeautifulSoup as Soup
 import sqlalchemy
+from qbittorrent import Client
 from pprint import pprint
 import os
 import hashlib
+import functools
 import shutil
-
-
-# TODO split downloadpolicy to local configuration file
-downloadpolicy = {
-	'냉장고를 부탁해': {
-		'filterkeywords': ['냉장고를', '부탁해', '720p', 'WITH'],
-	},
-	'동네변호사 조들호': {
-		'filterkeywords': ['동네', '변호사', '조들호', '720p', 'WITH'],
-	},
-	'마녀의 성': {
-		'filterkeywords': ['마녀의', '성', 'WITH'],
-	},
-	'마스터 국수의 신': {
-		'filterkeywords': ['국수의', '신', '720p', 'WITH'],
-	},
-	'굿바이 미스터 블랙': {
-		'filterkeywords': ['굿바이', '미스터', '블랙', '720p', 'WITH'],
-	},
-	'몬스터': {
-		'filterkeywords': ['몬스터', '720p', 'WITH'],
-	},
-	'옥중화': {
-		'filterkeywords': ['옥중화', '720p', 'WITH'],
-	},
-	'뱀파이어 탐정': {
-		'filterkeywords': ['뱀파이어', '탐정', '720p', 'WITH'],
-	},
-	'딴따라': {
-		'filterkeywords': ['딴따라', '720p', 'WITH'],
-	},
-	'보컬전쟁 신의 목소리': {
-		'filterkeywords': ['보컬', '전쟁', '신의', '목소리', '720p', 'WITH'],
-	},
-	'노래의 탄생': {
-		'filterkeywords': ['노래의', '탄생', '720p', 'WITH'],
-	},
-}
-
-
-class QBittorrent:
-	addr = 'http://127.0.0.1:6600/'
-	user = os.environ['qt_user']
-	pwd = os.environ['qt_pwd']
-
-	def __init__(self):
-		self.cookies = None
-
-	def __del__(self):
-		pass
-
-	def auth(self):
-		r = requests.post(
-			data={'username':self.user, 'password':self.pwd},
-			url=self.addr + 'login'
-			)
-		if r.status_code != 200:
-			self.cookies = None
-			return False
-		self.cookies = r.cookies
-		return True
-
-	def getlist(self, filter='all'):
-		r = requests.get(
-			cookies=self.cookies,
-			url=self.addr + 'query/torrents',
-			params={'filter':filter}
-			)
-		if r.status_code != 200:
-			return []
-		response = json.loads(r.content.decode('utf-8'))
-		ret_list = []
-		for each in response:
-			ret_list += [{
-				'hash':each['hash'],
-				'name':each['name'],
-				'progress':each['progress'],
-				'state':each['state']
-			}]
-		return ret_list
-
-	def download(self, magnet):
-		r = requests.post(
-			cookies=self.cookies,
-			data={'urls':magnet},
-			url=self.addr + 'command/download'
-			)
-		if r.status_code != 200:
-			return False
-		return True
-
-	def getcompletedone(self):
-		completed = getlist(filter='completed')
-		if len(completed) == 0:
-			return None
-		return completed[0]
-
-	def delete(self, hash):
-		r = requests.post(
-			cookies=self.cookies,
-			data={'hashes':hash},
-			url=self.addr + 'command/delete'
-		)
-		return True if r.status == 200 else False
+import sys
+import codecs
+import time
 
 
 class TorrentKim3Net:
-	addr = 'https://torrentkim3.net/'
-	res_tvdrama = 'bbs/bc.php?bo_table=torrent_tv'
-	res_variety = 'bbs/bc.php?bo_table=torrent_variety'
-	downloadpolicy = downloadpolicy
-
-	def __init__(self):
-		pass
+	def __init__(self, crawlinfo, downloadpolicy):
+		self.addr = crawlinfo['addr']
+		self.res_tvdrama = crawlinfo['tvdrama']
+		self.res_variety = crawlinfo['variety']
+		self.downloadpolicy = downloadpolicy
 
 	def __del__(self):
 		pass
@@ -154,37 +53,90 @@ class TorrentKim3Net:
 				pass
 		return links
 
-	def getlist_tvdrama(self):
-		return self.getlist(self.res_tvdrama)
+	def getlist_tvdrama(self, page=1):
+		return self.getlist(self.res_tvdrama + str(page))
 
-	def getlist_variety(self):
-		return self.getlist(self.res_variety)
+	def getlist_variety(self, page=1):
+		return self.getlist(self.res_variety + str(page))
 
 	def filtersubject(self, subject):
 		for vid in self.downloadpolicy:
-			matched = functools.reduce(
-				lambda x, y: x and y,
-				map(
-					lambda keyw: 
-						keyw in subject,
-					self.downloadpolicy[vid]['filterkeywords']
+			for filterkeywords in self.downloadpolicy[vid]['filterkeywords']:
+				matched = functools.reduce(
+					lambda x, y: x and y,
+					map(
+						lambda keyw: 
+							keyw in subject,
+						filterkeywords
+						)
 					)
-				)
-			if matched:
-				return True
+				if matched:
+					return True
 		return False
 
 	def getmagnetfrom(self, articlehref):
 		url = self.addr + articlehref.replace('../', '')
-		r = requests.get(url=url)
-		soup = Soup(r.content.decode('utf-8'), 'html.parser')
 		try:
+			r = requests.get(url=url)
+			soup = Soup(r.content.decode('utf8'), 'html.parser')
 			f_list = soup.find(id='f_list')
 			magnet = f_list.next_sibling.next_sibling.next_sibling.next_sibling['value']
 			return magnet
 		except:
 			return None
 		return None
+
+
+class DownloadDb:
+	STATUS_ADDED = 1
+	STATUS_DOWNLOADED = 2
+	STATUS_MOVED = 3
+
+	def __init__(self, dbpath):
+		self.dbpath = dbpath
+		self.needwrite = False
+		self.sync()
+
+	def added(self, magnet):
+		if magnet not in self.db:
+			self.db[magnet] = self.STATUS_ADDED
+			self.needwrite = True
+
+	def isadded(self, magnet):
+		if magnet in self.db:
+			return True
+		return False
+
+	def downloaded(self, magnet):
+		if magnet not in self.db or self.db[magnet] == self.STATUS_ADDED:
+			self.db[magnet] = self.STATUS_DOWNLOADED
+			self.needwrite = True
+
+	def isdownloaded(self, magnet):
+		if (magnet in self.db and
+			self.db[magnet] in (self.STATUS_DOWNLOADED, self.STATUS_MOVED)
+		):
+			return True
+		return False
+
+	def moved(self, magnet):
+		if magnet not in self.db or self.db[magnet] == self.STATUS_DOWNLOADED:
+			self.db[magnet] = self.STATUS_MOVED
+			self.needwrite = True
+
+	def ismoved(self, magnet):
+		if (magnet in self.db and self.db[magnet] == self.STATUS_MOVED):
+			return True
+		return False
+
+	def sync(self):
+		if self.needwrite:
+			with codecs.open(self.dbpath, 'w', encoding='utf8') as f:
+				f.write(json.dumps(self.db))
+			self.needwrite = False
+		else:
+			with codecs.open(self.dbpath, 'r', encoding='utf8') as f:
+				self.db = json.loads(f.read())
 
 
 class Nas:
@@ -216,11 +168,75 @@ class Nas:
 		return True
 
 
+def main():
+	# load config
+	with codecs.open('config.json', 'r', encoding='utf8') as f:
+		cfg = json.loads(f.read())
+	torrentcfg = cfg['torrent']
+	policycfg = cfg['downloadpolicy']
+	dbcfg = cfg['db']
+	crawlcfg = cfg['crawl']
+
+	# init db 
+	db = DownloadDb(dbcfg)
+
+	# get qbittorrent connection
+	q = Client(torrentcfg['addr'])
+	errmsg = q.login(torrentcfg['user'], torrentcfg['pwd'])
+	if errmsg:
+		print('Torrent server ' + errmsg, file=sys.stderr)
+	
+	# crawl
+	t = TorrentKim3Net(
+		crawlinfo = crawlcfg['torrentkim3.net'],
+		downloadpolicy = policycfg
+	)
+	l = []
+	for i in range(1, 3+1):
+		l += t.getlist_tvdrama(page=i)
+		l += t.getlist_variety(page=i)
+	
+	print('\n########## Crawl torrentkim3.net')
+	for each in t.getlist_tvdrama():
+		subj = each['subject']
+		matched = t.filtersubject(subj)
+		if not matched:
+			print('not matched : ' + subj)
+			continue
+
+		magnet = t.getmagnetfrom(each['href'])
+		if not magnet:
+			print('failed to get magnet : ' + subj)
+			continue
+
+		if db.isadded(magnet):
+			print('already added : ' + subj)
+		else:
+			q.download_from_link(magnet)
+			print('added : '+ subj)
+			db.added(magnet)
+	
+	db.sync()
+
+	time.sleep(1)
+
+	# check qbittorrent status
+
+	print('\n########## QBittorrent Status')
+	for each in q.torrents():
+		progress = each['progress']
+		percent = str(100 * progress) + ' %'
+		name = each['name']
+		magnet = 'magnet:?xt=urn:btih:' + each['hash'].lower()
+		print(percent + ' | ' + name + ' | ' + magnet)
+		if progress == 1 and not db.isdownloaded(magnet):
+			db.downloaded(magnet)
+
+	db.sync()
+
+
 if __name__ == '__main__':
-	q = QBittorrent()
-	q.auth()
-
-	t = TorrentKim3Net()
-	l = t.getlist_tvdrama()
-
-	q.download(t.getmagnetfrom(l[1]['href']))
+	while True:
+		print('\n#################### [ Running at ' + time.ctime() + ' ] ##########')
+		main()
+		time.sleep(60)
