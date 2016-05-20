@@ -197,7 +197,7 @@ def main():
 		l += t.getlist_variety(page=i)
 	
 	print('\n########## Crawl torrentkim3.net')
-	for each in t.getlist_tvdrama():
+	for each in l:
 		subj = each['subject']
 		matched = t.filtersubject(subj)
 		if not matched:
@@ -239,4 +239,4 @@ if __name__ == '__main__':
 	while True:
 		print('\n#################### [ Running at ' + time.ctime() + ' ] ##########')
 		main()
-		time.sleep(60)
+		time.sleep(300)
