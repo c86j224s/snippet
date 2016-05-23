@@ -28,6 +28,7 @@ class TorrentKim3Net:
 		self.addr = crawlinfo['addr']
 		self.res_tvdrama = crawlinfo['tvdrama']
 		self.res_variety = crawlinfo['variety']
+		self.res_docu = crawlinfo['docu']
 		self.downloadpolicy = downloadpolicy
 
 	def __del__(self):
@@ -58,6 +59,9 @@ class TorrentKim3Net:
 
 	def getlist_variety(self, page=1):
 		return self.getlist(self.res_variety + str(page))
+
+	def getlist_docu(self, page=1):
+		return self.getlist(self.res_docu + str(page))
 
 	def filtersubject(self, subject):
 		for vid in self.downloadpolicy:
@@ -195,6 +199,7 @@ def main():
 	for i in range(1, 3+1):
 		l += t.getlist_tvdrama(page=i)
 		l += t.getlist_variety(page=i)
+		l += t.getlist_docu(page=i)
 	
 	print('\n########## Crawl torrentkim3.net')
 	for each in l:
