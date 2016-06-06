@@ -91,6 +91,8 @@ class TorrentKim3Net:
 		return None
 
 
+
+
 class DownloadDb:
 	STATUS_ADDED = 1
 	STATUS_DOWNLOADED = 2
@@ -172,7 +174,9 @@ class Nas:
 		return True
 
 
-def main():
+def main_proc():
+	print('\n#################### [ Begin - Running at ' + time.ctime() + ' ] ##########')
+
 	# load config
 	with codecs.open('config.json', 'r', encoding='utf8') as f:
 		cfg = json.loads(f.read())
@@ -233,15 +237,20 @@ def main():
 		percent = str(100 * progress) + ' %'
 		name = each['name']
 		magnet = 'magnet:?xt=urn:btih:' + each['hash'].lower()
-		print(percent + ' | ' + name + ' | ' + magnet)
+		tr_files = map(lambda x: x['name'], q.get_torrent_files(each['hash']))
+		print('+ ', percent + ' | ' + name + ' | ' + magnet)
+		for each_file in tr_files:
+			print('+-- ' + each_file)
 		if progress == 1 and not db.isdownloaded(magnet):
 			db.downloaded(magnet)
 
 	db.sync()
 
+	print('\n#################### [ End - Running at ' + time.ctime() + ' ] ##########')
+
+	time.sleep (300)
+
 
 if __name__ == '__main__':
 	while True:
-		print('\n#################### [ Running at ' + time.ctime() + ' ] ##########')
-		main()
-		time.sleep(300)
+		main_proc()
