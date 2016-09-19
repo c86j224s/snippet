@@ -24,233 +24,236 @@ import time
 
 
 class TorrentKim3Net:
-	def __init__(self, crawlinfo, downloadpolicy):
-		self.addr = crawlinfo['addr']
-		self.res_tvdrama = crawlinfo['tvdrama']
-		self.res_variety = crawlinfo['variety']
-		self.res_docu = crawlinfo['docu']
-		self.downloadpolicy = downloadpolicy
+    def __init__(self, crawlinfo, downloadpolicy):
+        self.addr = crawlinfo['addr']
+        self.res_tvdrama = crawlinfo['tvdrama']
+        self.res_variety = crawlinfo['variety']
+        self.res_docu = crawlinfo['docu']
+        self.downloadpolicy = downloadpolicy
 
-	def __del__(self):
-		pass
+    def __del__(self):
+        pass
 
-	def getlist(self, respath):
-		r = requests.get(url=self.addr + respath)
-		soup = Soup(r.content.decode('utf-8'), 'html.parser')
-		rows = soup.find(id='main_body').find('table', 'board_list').find_all('tr')
-		links = []
-		for row in rows:
-			try:
-				if ('style' in row.attrs and
-					row['style'] == 'display:none'
-					):
-					contineu
-				link = {}
-				link['num'] = int(row.find('td', 'num').text)
-				link['href'] = row.find('td', 'subject').a['href']
-				link['subject'] = row.find('td', 'subject').a.text
-				links += [link]
-			except:
-				pass
-		return links
+    def getlist(self, respath):
+        r = requests.get(url=self.addr + respath)
+        soup = Soup(r.content.decode('utf-8'), 'html.parser')
+        rows = soup.find(id='main_body').find('table', 'board_list').find_all('tr')
+        links = []
+        for row in rows:
+            try:
+                if ('style' in row.attrs and
+                    row['style'] == 'display:none'
+                    ):
+                    contineu
+                link = {}
+                link['num'] = int(row.find('td', 'num').text)
+                link['href'] = row.find('td', 'subject').a['href']
+                link['subject'] = row.find('td', 'subject').a.text
+                links += [link]
+            except:
+                pass
+        return links
 
-	def getlist_tvdrama(self, page=1):
-		return self.getlist(self.res_tvdrama + str(page))
+    def getlist_tvdrama(self, page=1):
+        return self.getlist(self.res_tvdrama + str(page))
 
-	def getlist_variety(self, page=1):
-		return self.getlist(self.res_variety + str(page))
+    def getlist_variety(self, page=1):
+        return self.getlist(self.res_variety + str(page))
 
-	def getlist_docu(self, page=1):
-		return self.getlist(self.res_docu + str(page))
+    def getlist_docu(self, page=1):
+        return self.getlist(self.res_docu + str(page))
 
-	def filtersubject(self, subject):
-		for vid in self.downloadpolicy:
-			for filterkeywords in self.downloadpolicy[vid]['filterkeywords']:
-				matched = functools.reduce(
-					lambda x, y: x and y,
-					map(
-						lambda keyw: 
-							keyw in subject,
-						filterkeywords
-						)
-					)
-				if matched:
-					return True
-		return False
+    def filtersubject(self, subject):
+        for vid in self.downloadpolicy:
+            for filterkeywords in self.downloadpolicy[vid]['filterkeywords']:
+                matched = functools.reduce(
+                    lambda x, y: x and y,
+                    map(
+                        lambda keyw: 
+                            keyw in subject,
+                        filterkeywords
+                        )
+                    )
+                if matched:
+                    return True
+        return False
 
-	def getmagnetfrom(self, articlehref):
-		url = self.addr + articlehref.replace('../', '')
-		try:
-			r = requests.get(url=url)
-			soup = Soup(r.content.decode('utf8'), 'html.parser')
-			f_list = soup.find(id='f_list')
-			magnet = f_list.next_sibling.next_sibling.next_sibling.next_sibling['value']
-			return magnet
-		except:
-			return None
-		return None
+    def getmagnetfrom(self, articlehref):
+        url = self.addr + articlehref.replace('../', '')
+        try:
+            r = requests.get(url=url)
+            soup = Soup(r.content.decode('utf8'), 'html.parser')
+            f_list = soup.find(id='f_list')
+            magnet = f_list.next_sibling.next_sibling.next_sibling.next_sibling['value']
+            return magnet
+        except:
+            return None
+        return None
 
 
 
 
 class DownloadDb:
-	STATUS_ADDED = 1
-	STATUS_DOWNLOADED = 2
-	STATUS_MOVED = 3
+    STATUS_ADDED = 1
+    STATUS_DOWNLOADED = 2
+    STATUS_MOVED = 3
 
-	def __init__(self, dbpath):
-		self.dbpath = dbpath
-		self.needwrite = False
-		self.sync()
+    def __init__(self, dbpath):
+        self.dbpath = dbpath
+        self.needwrite = False
+        self.sync()
 
-	def added(self, magnet):
-		if magnet not in self.db:
-			self.db[magnet] = self.STATUS_ADDED
-			self.needwrite = True
+    def added(self, magnet):
+        if magnet not in self.db:
+            self.db[magnet] = self.STATUS_ADDED
+            self.needwrite = True
 
-	def isadded(self, magnet):
-		if magnet in self.db:
-			return True
-		return False
+    def isadded(self, magnet):
+        if magnet in self.db:
+            return True
+        return False
 
-	def downloaded(self, magnet):
-		if magnet not in self.db or self.db[magnet] == self.STATUS_ADDED:
-			self.db[magnet] = self.STATUS_DOWNLOADED
-			self.needwrite = True
+    def downloaded(self, magnet):
+        if magnet not in self.db or self.db[magnet] == self.STATUS_ADDED:
+            self.db[magnet] = self.STATUS_DOWNLOADED
+            self.needwrite = True
 
-	def isdownloaded(self, magnet):
-		if (magnet in self.db and
-			self.db[magnet] in (self.STATUS_DOWNLOADED, self.STATUS_MOVED)
-		):
-			return True
-		return False
+    def isdownloaded(self, magnet):
+        if (magnet in self.db and
+            self.db[magnet] in (self.STATUS_DOWNLOADED, self.STATUS_MOVED)
+        ):
+            return True
+        return False
 
-	def moved(self, magnet):
-		if magnet not in self.db or self.db[magnet] == self.STATUS_DOWNLOADED:
-			self.db[magnet] = self.STATUS_MOVED
-			self.needwrite = True
+    def moved(self, magnet):
+        if magnet not in self.db or self.db[magnet] == self.STATUS_DOWNLOADED:
+            self.db[magnet] = self.STATUS_MOVED
+            self.needwrite = True
 
-	def ismoved(self, magnet):
-		if (magnet in self.db and self.db[magnet] == self.STATUS_MOVED):
-			return True
-		return False
+    def ismoved(self, magnet):
+        if (magnet in self.db and self.db[magnet] == self.STATUS_MOVED):
+            return True
+        return False
 
-	def sync(self):
-		if self.needwrite:
-			with codecs.open(self.dbpath, 'w', encoding='utf8') as f:
-				f.write(json.dumps(self.db))
-			self.needwrite = False
-		else:
-			with codecs.open(self.dbpath, 'r', encoding='utf8') as f:
-				self.db = json.loads(f.read())
+    def sync(self):
+        if self.needwrite:
+            with codecs.open(self.dbpath, 'w', encoding='utf8') as f:
+                f.write(json.dumps(self.db))
+            self.needwrite = False
+        else:
+            with codecs.open(self.dbpath, 'r', encoding='utf8') as f:
+                self.db = json.loads(f.read())
 
 
 class Nas:
-	def __init__(self):
-		self.uncpath = os.environ['nas_path']
-		self.user = os.environ['nas_user']
-		self.pwd = os.environ['nas_pwd']
+    def __init__(self):
+        self.uncpath = os.environ['nas_path']
+        self.user = os.environ['nas_user']
+        self.pwd = os.environ['nas_pwd']
 
-	def __del__(self):
-		pass
+    def __del__(self):
+        pass
 
-	def auth(self):
-		os.system('net use {uncpath} /user:{user} {pwd}'.format(uncpath=self.uncpath, user=self.user, pwd=self.pwd))
-		# TODO check return value
+    def auth(self):
+        os.system('net use {uncpath} /user:{user} {pwd}'.format(uncpath=self.uncpath, user=self.user, pwd=self.pwd))
+        # TODO check return value
 
-	def copy(self, srcpath, dstpath):
-		try:
-			srcchecksum = None
-			dstchecksum = None
-			with open(srcpath, 'r') as f:
-				srcchecksum = hashlib.md5(f.read()).hexdigest()
-			shutil.copyfile(srcpath, dstpath)
-			with open(srcpath, 'r') as f:
-				dstchecksum = hashlib.md5(f.read()).hexdigest()
-			if srcchecksum != dstchecksum:
-				return False
-		except:
-			return False
-		return True
+    def copy(self, srcpath, dstpath):
+        try:
+            srcchecksum = None
+            dstchecksum = None
+            with open(srcpath, 'r') as f:
+                srcchecksum = hashlib.md5(f.read()).hexdigest()
+            shutil.copyfile(srcpath, dstpath)
+            with open(srcpath, 'r') as f:
+                dstchecksum = hashlib.md5(f.read()).hexdigest()
+            if srcchecksum != dstchecksum:
+                return False
+        except:
+            return False
+        return True
 
 
 def main_proc():
-	print('\n#################### [ Begin - Running at ' + time.ctime() + ' ] ##########')
+    print('\n#################### [ Begin - Running at ' + time.ctime() + ' ] ##########')
 
-	# load config
-	with codecs.open('config.json', 'r', encoding='utf8') as f:
-		cfg = json.loads(f.read())
-	torrentcfg = cfg['torrent']
-	policycfg = cfg['downloadpolicy']
-	dbcfg = cfg['db']
-	crawlcfg = cfg['crawl']
+    # load config
+    with codecs.open('config.json', 'r', encoding='utf8') as f:
+        cfg = json.loads(f.read())
+    torrentcfg = cfg['torrent']
+    policycfg = cfg['downloadpolicy']
+    dbcfg = cfg['db']
+    crawlcfg = cfg['crawl']
 
-	# init db 
-	db = DownloadDb(dbcfg)
+    # init db 
+    db = DownloadDb(dbcfg)
 
-	# get qbittorrent connection
-	q = Client(torrentcfg['addr'])
-	errmsg = q.login(torrentcfg['user'], torrentcfg['pwd'])
-	if errmsg:
-		print('Torrent server ' + errmsg, file=sys.stderr)
-	
-	# crawl
-	t = TorrentKim3Net(
-		crawlinfo = crawlcfg['torrentkim3.net'],
-		downloadpolicy = policycfg
-	)
-	l = []
-	for i in range(1, 3+1):
-		l += t.getlist_tvdrama(page=i)
-		l += t.getlist_variety(page=i)
-		l += t.getlist_docu(page=i)
-	
-	print('\n########## Crawl torrentkim3.net')
-	for each in l:
-		subj = each['subject']
-		matched = t.filtersubject(subj)
-		if not matched:
-			print('not matched : ' + subj)
-			continue
+    # get qbittorrent connection
+    q = Client(torrentcfg['addr'])
+    errmsg = q.login(torrentcfg['user'], torrentcfg['pwd'])
+    if errmsg:
+        print('Torrent server ' + errmsg, file=sys.stderr)
+    
+    # crawl
+    t = TorrentKim3Net(
+        crawlinfo = crawlcfg['torrentkim3.net'],
+        downloadpolicy = policycfg
+    )
+    l = []
+    for i in range(1, 3+1):
+        l += t.getlist_tvdrama(page=i)
+        l += t.getlist_variety(page=i)
+        l += t.getlist_docu(page=i)
+    
+    print('\n########## Crawl torrentkim3.net')
+    for each in l:
+        subj = each['subject']
+        matched = t.filtersubject(subj)
+        if not matched:
+            try:
+                print('not matched : {}'.format(subj))
+            except UnicodeEncodeError:
+                print('not matched : {}'.format(subj.encode('cp949', 'replace')))
+            continue
 
-		magnet = t.getmagnetfrom(each['href'])
-		if not magnet:
-			print('failed to get magnet : ' + subj)
-			continue
+        magnet = t.getmagnetfrom(each['href'])
+        if not magnet:
+            print('failed to get magnet : ' + subj)
+            continue
 
-		if db.isadded(magnet):
-			print('already added : ' + subj)
-		else:
-			q.download_from_link(magnet)
-			print('added : '+ subj)
-			db.added(magnet)
-	
-	db.sync()
+        if db.isadded(magnet):
+            print('already added : ' + subj)
+        else:
+            q.download_from_link(magnet)
+            print('added : '+ subj)
+            db.added(magnet)
+    
+    db.sync()
 
-	time.sleep(1)
+    time.sleep(1)
 
-	# check qbittorrent status
+    # check qbittorrent status
 
-	print('\n########## QBittorrent Status')
-	for each in q.torrents():
-		progress = each['progress']
-		percent = str(100 * progress) + ' %'
-		name = each['name']
-		magnet = 'magnet:?xt=urn:btih:' + each['hash'].lower()
-		tr_files = map(lambda x: x['name'], q.get_torrent_files(each['hash']))
-		print('+ ', percent + ' | ' + name + ' | ' + magnet)
-		for each_file in tr_files:
-			print('+-- ' + each_file)
-		if progress == 1 and not db.isdownloaded(magnet):
-			db.downloaded(magnet)
+    print('\n########## QBittorrent Status')
+    for each in q.torrents():
+        progress = each['progress']
+        percent = str(100 * progress) + ' %'
+        name = each['name']
+        magnet = 'magnet:?xt=urn:btih:' + each['hash'].lower()
+        tr_files = map(lambda x: x['name'], q.get_torrent_files(each['hash']))
+        print('+ ', percent + ' | ' + name + ' | ' + magnet)
+        for each_file in tr_files:
+            print('+-- ' + each_file)
+        if progress == 1 and not db.isdownloaded(magnet):
+            db.downloaded(magnet)
 
-	db.sync()
+    db.sync()
 
-	print('\n#################### [ End - Running at ' + time.ctime() + ' ] ##########')
+    print('\n#################### [ End - Running at ' + time.ctime() + ' ] ##########')
 
-	time.sleep (300)
+    time.sleep (300)
 
 
 if __name__ == '__main__':
-	while True:
-		main_proc()
+    while True:
+        main_proc()
