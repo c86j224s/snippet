@@ -37,6 +37,8 @@ class TorrentKim3Net:
     def getlist(self, respath):
         r = requests.get(url=self.addr + respath)
         soup = Soup(r.content.decode('utf-8'), 'html.parser')
+        if not soup:
+        	print("ERRRRRRRRRRRRRR!!")
         rows = soup.find(id='main_body').find('table', 'board_list').find_all('tr')
         links = []
         for row in rows:
@@ -70,7 +72,7 @@ class TorrentKim3Net:
                     lambda x, y: x and y,
                     map(
                         lambda keyw: 
-                            keyw in subject,
+                            keyw.lower() in subject.lower(),
                         filterkeywords
                         )
                     )
