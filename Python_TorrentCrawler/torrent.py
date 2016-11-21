@@ -46,7 +46,7 @@ class TorrentKim3Net:
                 if ('style' in row.attrs and
                     row['style'] == 'display:none'
                     ):
-                    contineu
+                    continue
                 link = {}
                 link['num'] = int(row.find('td', 'num').text)
                 link['href'] = row.find('td', 'subject').a['href']
@@ -245,7 +245,10 @@ def main_proc():
         tr_files = map(lambda x: x['name'], q.get_torrent_files(each['hash']))
         print('+ ', percent + ' | ' + name + ' | ' + magnet)
         for each_file in tr_files:
-            print('+-- ' + each_file)
+            try:
+                print('+-- ' + each_file)
+            except UnicodeEncodeError:
+                print('+-- {}'.format(each_file.encode('cp949', 'replace')))
         if progress == 1 and not db.isdownloaded(magnet):
             db.downloaded(magnet)
 
