@@ -1,0 +1,9 @@
+[package]
+name = "scrapper"
+version = "0.1.0"
+authors = ["jinsung"]
+
+[dependencies]
+reqwest = "*"
+hyper = "*"
+select = "*"
