@@ -6,6 +6,10 @@ import base58
 import hashlib
 
 
+# ref : https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses
+# ref :https://davanum.wordpress.com/2014/03/17/generating-a-bitcoin-private-key-and-address/
+
+
 def privkeytopubkey(privk):
     sk = ecdsa.SigningKey.from_string(privk, curve=ecdsa.SECP256k1)
     pubk = b'\04' + sk.verifying_key.to_string()
