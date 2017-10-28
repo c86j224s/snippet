@@ -29,6 +29,8 @@ impl Complex {
 }
 
 fn ex_5_1() {
+    println!("\n#### ex_5_1() ####");
+
     let a = Complex::new(1.0, 2.0);
     println!("a = {}", a.to_string());
 
@@ -46,7 +48,71 @@ fn ex_5_1() {
     println!("abs(d) = {}", d.abs());
 }
 
+//==============================================================================
+trait Draw {
+    fn draw(&self);
+}
 
+struct S1 {
+    val : u32
+}
+
+struct S2 {
+    val : f32
+}
+
+impl Draw for S1 {
+    fn draw(&self) {
+        println!("*** {} ***", self.val);
+    }
+}
+
+impl Draw for S2 {
+    fn draw(&self) {
+        println!("*** {} ***", self.val);
+    }
+}
+
+fn draw_object(obj : &Draw) {
+    obj.draw();
+}
+
+fn ex_5_2() {
+    println!("\n#### ex_5_2 ####");
+    let s1 = S1 { val : 10 };
+    draw_object(&s1);
+
+    let s2 = S2 { val : 3.14 };
+    draw_object(&s2);
+}
+
+//==============================================================================
+#[derive(Eq)]
+struct Position {
+    x : u32,
+    y : u32
+}
+
+impl PartialEq for Position {
+    fn eq(&self, other: &Position) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+
+fn ex_5_3() {
+    println!("\n#### ex_5_3 (Eq, PartialEq traits) ####");
+    let pos1 = Position { x: 10, y: 20 };
+    let pos2 = Position { x: 10, y: 20 };
+    let pos3 = Position { x: 20, y: 40 };
+
+    println!("pos1 == pos2 : {}", pos1 == pos2);
+    println!("pos1 == pos3 : {}", pos1 == pos3);
+    println!("pos1 != pos3 : {}", pos1 != pos3);
+}
+
+//==============================================================================
 fn main() {
     ex_5_1();
+    ex_5_2();
+    ex_5_3();
 }
