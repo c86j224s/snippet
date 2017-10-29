@@ -132,8 +132,43 @@ fn ex_5_3() {
 }
 
 //==============================================================================
+// Default, Debug trait
+
+enum ButtonState {
+    CLICKED,
+    RELEASED
+}
+
+impl Default for ButtonState {
+    fn default() -> ButtonState {
+        ButtonState::CLICKED
+    }
+}
+
+impl std::fmt::Debug for ButtonState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let state = match *self {
+            ButtonState::CLICKED => "CLICKED",
+            ButtonState::RELEASED => "RELEASED",
+        };
+        write!(f, "{}", state)
+    }
+}
+
+
+fn ex_5_4() {
+    let mut btn : ButtonState = Default::default();
+    println!("btn = {:?}", btn);
+
+    btn = ButtonState::RELEASED;
+    println!("btn = {:?}", btn);
+}
+
+
+//==============================================================================
 fn main() {
     ex_5_1();
     ex_5_2();
     ex_5_3();
+    ex_5_4();
 }
