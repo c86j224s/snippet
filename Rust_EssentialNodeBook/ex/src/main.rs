@@ -87,9 +87,10 @@ fn ex_5_2() {
 }
 
 //==============================================================================
-// Eq and Ord trait example
+// Eq, Ord, Clone, Debug, Default and Add traits for struct
 
 #[derive(Eq)]
+#[derive(Default)]
 struct Position {
     x : u32,
     y : u32
@@ -116,6 +117,27 @@ impl std::cmp::PartialOrd for Position {
     }
 }
 
+impl std::clone::Clone for Position {
+    fn clone(&self) -> Position {
+        Position { x : self.x, y: self.y }
+        // Or, derive Copy at Position and return *self here.
+    }
+}
+
+impl std::ops::Add for Position {
+    type Output = Position;
+
+    fn add(self, other: Position) -> Position {
+        Position { x: self.x + other.x, y: self.y + other.y }
+    }
+}
+
+impl std::fmt::Debug for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Position{{ x:{}, y:{} }}", self.x, self.y)
+    }
+}
+
 fn ex_5_3() {
     println!("\n#### ex_5_3 (Eq, PartialEq traits) ####");
     let pos1 = Position { x: 10, y: 20 };
@@ -129,10 +151,18 @@ fn ex_5_3() {
     println!("pos1 == pos4 : {}", pos1 == pos4);
     println!("pos1 < pos3 : {}", pos1 < pos3);
     println!("pos1 > pos3 : {}", pos1 > pos3);
+
+    let pos5 = pos4.clone();
+    println!("pos4 == pos5 : {}", pos4 > pos5);
+
+    println!("pos1 + pos2 : {:?}", pos1 + pos2);
+
+    let pos0 : Position = Default::default();
+    println!("pos0 : {:?}", pos0);
 }
 
 //==============================================================================
-// Default, Debug trait
+// Default and Debug traits for enum
 
 enum ButtonState {
     CLICKED,
