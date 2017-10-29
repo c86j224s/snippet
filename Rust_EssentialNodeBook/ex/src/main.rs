@@ -87,6 +87,8 @@ fn ex_5_2() {
 }
 
 //==============================================================================
+// Eq and Ord trait example
+
 #[derive(Eq)]
 struct Position {
     x : u32,
@@ -99,15 +101,34 @@ impl PartialEq for Position {
     }
 }
 
+impl std::cmp::Ord for Position {
+    fn cmp(&self, other: &Position) -> std::cmp::Ordering {
+        let abs = self.x * self.x + self.y * self.y;
+        let abs_other = other.x * other.x + other.y * other.y;
+
+        abs.cmp(&abs_other)
+    }
+}
+
+impl std::cmp::PartialOrd for Position {
+    fn partial_cmp(&self, other: &Position) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 fn ex_5_3() {
     println!("\n#### ex_5_3 (Eq, PartialEq traits) ####");
     let pos1 = Position { x: 10, y: 20 };
     let pos2 = Position { x: 10, y: 20 };
     let pos3 = Position { x: 20, y: 40 };
+    let pos4 = Position { x: 20, y: 10 };
 
     println!("pos1 == pos2 : {}", pos1 == pos2);
     println!("pos1 == pos3 : {}", pos1 == pos3);
     println!("pos1 != pos3 : {}", pos1 != pos3);
+    println!("pos1 == pos4 : {}", pos1 == pos4);
+    println!("pos1 < pos3 : {}", pos1 < pos3);
+    println!("pos1 > pos3 : {}", pos1 > pos3);
 }
 
 //==============================================================================
