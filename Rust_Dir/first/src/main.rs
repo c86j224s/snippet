@@ -1,3 +1,4 @@
+use std::env;
 use std::vec::Vec;
 use std::fs;
 use std::io;
@@ -14,6 +15,11 @@ struct DirEnt {
     ent_size: u64,
     ent_type: DirEntType,
     ent_childs: Vec<DirEnt>,
+}
+
+trait DirEntPrintable {
+    fn print(&self);
+    fn print_with_depth(&self, depth: u32);
 }
 
 impl DirEnt {
@@ -56,12 +62,14 @@ impl DirEnt {
             ent_childs: ent_childs,
         })
     }
+}
 
+impl DirEntPrintable for DirEnt {
     fn print(&self) {
         self.print_with_depth(0);
     }
 
-    fn print_with_depth(&self, depth: u32) {
+     fn print_with_depth(&self, depth: u32) {
         let mut ds = String::new();
         for _ in 0..(depth * 2) {
             ds.push_str(" ");
@@ -81,10 +89,15 @@ impl DirEnt {
         for child in &self.ent_childs {
             child.print_with_depth(depth + 1);
         }
-    }
+    }   
 }
 
+
 fn main() {
+    for arg in env::args() {
+        println!("{}", arg);
+    }
+
     match DirEnt::new_from_path(&Path::new("/Users/allthatcode")) {
         Ok(ent) => ent.print(),
         Err(err) => println!("FAIL : {:?}", err),
