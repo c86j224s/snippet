@@ -93,12 +93,21 @@ impl DirEntPrintable for DirEnt {
 }
 
 
+fn print_usage() {
+    println!("argument missing: first argument is path to traverse");
+}
+
+
 fn main() {
-    for arg in env::args() {
-        println!("{}", arg);
+    let args : Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        return print_usage();
     }
 
-    match DirEnt::new_from_path(&Path::new("/Users/allthatcode")) {
+    let arg1 = &args[1];
+
+    match DirEnt::new_from_path(&Path::new(arg1)) {
         Ok(ent) => ent.print(),
         Err(err) => println!("FAIL : {:?}", err),
     }
