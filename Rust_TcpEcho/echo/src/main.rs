@@ -2,7 +2,6 @@ use std::net::{TcpListener};
 use std::io::{BufReader, BufWriter, BufRead, Write};
 use std::thread;
 
-fn main() {
     let listener = match TcpListener::bind("127.0.0.1:8888") {
         Ok(v) => { println!("127.0.0.1:8888 binded."); v },
         Err(e) => { panic!("bind failed : {:?}", e) }
