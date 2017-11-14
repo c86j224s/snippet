@@ -1,8 +1,8 @@
-use std::net::{TcpListener, SocketAddr};
+//use std::net::{TcpListener};
+use std::net::{TcpListener, TcpStream};
 use std::io::{BufReader, BufWriter, BufRead, Write};
 use std::thread;
-use std::sync::{Arc};
-use std::option::{Option};
+use std::sync::{Arc, Mutex};
 
 fn main() {
     let listener = match TcpListener::bind("127.0.0.1:8888") {
@@ -11,7 +11,9 @@ fn main() {
     };
 
     let mut threads = vec![];
-    let mut clients = Arc::new(vec![]);
+    //let mut clients_vec = vec![];
+    //let clients : Arc<&mut Vec<Arc<TcpStream>>> = Arc::new(&mut clients_vec);
+    let clients = Arc::new(Mutex::new(vec![]));
 
     for stream in listener.incoming() {
         let client = Arc::new(match stream {
@@ -23,7 +25,8 @@ fn main() {
         });
 
         {
-            Arc::make_mut(&mut clients).push(Arc::clone(&client));
+            //Arc::make_mut(&mut clients).unwrap().push(Arc::clone(&client));
+            clients.lock().unwrap().push(Arc::clone(&client));
         }
 
         let thread_client = Arc::clone(&client);
@@ -31,16 +34,16 @@ fn main() {
         let handle = thread::spawn(move || {
             let mut reader = BufReader::new(&*thread_client);
 
-            let mut line = String::new();
-            let mut peer : Option<SocketAddr>;
             loop {
-                match reader.read_line(&mut line) {
+                let mut line = String::new();
+                let peer = match reader.read_line(&mut line) {
                     Ok(_) => {
-                        peer = Some(thread_client.peer_addr().unwrap());
+                        let peer = Some(thread_client.peer_addr().unwrap());
                         println!("[{:?}] {}",
                             peer,
                             line.trim()
                         );
+                        peer
                     },
                     Err(e) => {
                         println!("Error - [{:?}] read error. {:?}", 
@@ -51,7 +54,7 @@ fn main() {
                     }
                 };
 
-                for it in thread_clients.iter() {
+                for it in thread_clients.lock().unwrap().iter() {
                     let cli = Arc::clone(&it);
                     let mut writer = BufWriter::new(&*cli);
                     write!(writer, "[{:?}] {}", peer, line);
