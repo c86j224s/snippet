@@ -1,0 +1,6 @@
+[package]
+name = "httpcli"
+version = "0.1.0"
+authors = ["NC-KOREA\\c86j224s <c86j224s@ncsoft.com>"]
+
+[dependencies]
