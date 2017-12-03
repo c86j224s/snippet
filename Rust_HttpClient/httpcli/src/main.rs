@@ -11,6 +11,8 @@ struct HttpRequest {
 }
 
 impl HttpRequest {
+    type Err = String;
+
     fn new() -> HttpRequest {
         HttpRequest { 
             method: String::new(),
@@ -87,16 +89,30 @@ impl FromStr for HttpRequest {
             HEADER_NAME,
             HEADER_VALUE,
             BODY,
-            DONE
+            DONE,
+            ERROR
         }
         let mut state = State::METHOD;
+        let mut current_token = String::new();
         let mut httpreq = HttpRequest::new();
 
-        loop {
+        for c in s {
             match state {
-                METHOD => {},
-                RESOURCE => {},
-                VERSION => {},
+                State::METHOD | State::RESOURCE => {
+                    match c {
+                        ' ' | '\t' => { 
+                            if !current_token.is_empty() { 
+                                httpreq.method = current_token.trim();
+                                current_token.clear();
+                                state = State::RESOURCE; 
+                            } 
+                        }
+                        _ => { current_token.push(c); }
+                    }
+                },
+                VERSION => {
+
+                },
                 HEADER_NAME => {},
                 HEADER_VALUE => {},
                 BODY => {},
