@@ -93,10 +93,31 @@ impl FromStr for HttpRequest {
             ERROR
         }
         let mut state = State::METHOD;
-        let mut current_token = String::new();
+        let mut cur = 0;
+
         let mut httpreq = HttpRequest::new();
 
-        for c in s {
+        let mut token_begin = 0;
+        let mut token_end = s.len();
+
+        loop {
+            match s[cur] {
+                ' ' | '\t' => {
+                    match state {
+                        
+                    }
+                },
+                '\r' | '\n' => {
+
+                },
+                _ => {
+
+                }
+            }
+
+            
+            
+
             match state {
                 State::METHOD | State::RESOURCE => {
                     match c {
@@ -104,14 +125,22 @@ impl FromStr for HttpRequest {
                             if !current_token.is_empty() { 
                                 httpreq.method = current_token.trim();
                                 current_token.clear();
-                                state = State::RESOURCE; 
+                                state = if state == State::METHOD { State::RESOURCE } else { State::VERSION };
                             } 
                         }
                         _ => { current_token.push(c); }
                     }
                 },
                 VERSION => {
-
+                    match c {
+                        '\n' => {
+                            if current_token[current_token.len()-1] == '\r' {
+                                httpreq.method = current_token.trim();
+                                current_token.clear();
+                                state = State::RESOURCE;
+                            }
+                        }
+                    }
                 },
                 HEADER_NAME => {},
                 HEADER_VALUE => {},
