@@ -80,6 +80,18 @@ impl HttpRequest {
     }
 }
 
+#[test]
+fn test_http_request() {
+    let req = HttpRequest::new().head("/").version("HTTP/1.1").header("Host", "127.0.0.1").to_string();
+
+    match req {
+        Some(r) => println!("{}", r),
+        None => println!("to string failed")
+    }
+}
+
+/*
+
 impl FromStr for HttpRequest {
     fn from_str (s: &str) -> Result<Self, Self::Err> {
         enum State {
@@ -152,6 +164,7 @@ impl FromStr for HttpRequest {
         Ok(httpreq)
     }
 }
+*/
 
 fn main() {
     //let endpoint = "kr.ncsoft.com:80";
