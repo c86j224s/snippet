@@ -1,0 +1,5 @@
+object CreateAccount {
+    string LoginName;
+    string UserName;
+    string Password;
+};
