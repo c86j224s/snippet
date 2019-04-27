@@ -1,0 +1,7 @@
+[package]
+name = "second"
+version = "0.1.0"
+authors = ["js <c86j224s@gmail.com>"]
+edition = "2018"
+
+[dependencies]
