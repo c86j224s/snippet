@@ -2,5 +2,6 @@
 name = "chat"
 version = "0.1.0"
 authors = ["JinSung Choi <c86j224s@gmail.com>"]
+edition = "2018"
 
 [dependencies]
