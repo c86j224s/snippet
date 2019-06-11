@@ -7,12 +7,13 @@
 
 //use std::net::{TcpListener};
 use std::net::{TcpListener, TcpStream};
-use std::io::{BufReader, BufWriter, BufRead, Write};
+use std::io::{BufReader, BufWriter, BufRead, Write, Read, ErrorKind};
 use std::thread;
 use std::sync::{Arc, Mutex};
 
 
-fn main() {
+/*
+fn main0() {
     // 리스너 바인딩.
     let listener : TcpListener = match TcpListener::bind("127.0.0.1:8888") {
         Ok(v) => { println!("bound on 127.0.0.1:8888"); v },
@@ -101,6 +102,43 @@ fn main() {
         match each.join() {
             Err(e) => { println!("Error - thread join error. {:?}", e) },
             _ => {}
+        }
+    }
+}
+*/
+
+fn main() {
+    // 리스너 바인딩.
+    let listener : TcpListener = match TcpListener::bind("127.0.0.1:8888") {
+        Ok(v) => { println!("bound on 127.0.0.1:8888"); v },
+        Err(e) => { panic!("binding failed. {:?}", e) }
+    };
+   
+    for stream in listener.incoming() {
+        let mut client : TcpStream = match stream {
+            Ok(v) => {
+                println!("new client accept! {:?}", v.peer_addr().unwrap());
+                v 
+            },
+            Err(e) => { panic!("accepting failed. {:?}", e) }
+        };
+
+        // 잘 안돌아감~ 공부 좀더 해야 할 듯..
+
+        match client.set_nonblocking(true) {
+            Ok(_) => {}
+            Err(e) => { panic!("set nonblocking error. {:?}", e) }
+        }
+
+        loop {
+            client.take()
+            let mut s = String::new();
+            match client.read_to_string(&mut s) {
+                Ok(read_size) => { println!("{}", s); },
+                Ok(read_size) if read_size <= 0 => { println!("disconnected"); break; },
+                Err(ref e) if e.kind() == ErrorKind::WouldBlock => (),
+                Err(ref e)  => { panic!("read to string error. {:?}", e) }
+            }
         }
     }
 }
