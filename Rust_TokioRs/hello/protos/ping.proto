@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message PING_MESSAGE {
+    uint32 current_utc = 1;
+}

@@ -1,0 +1,14 @@
+{
+    "server_ip": "127.0.0.1",
+    "server_port": 4567,
+    "accounts": [
+        {
+            "login_name": "alpha@bravo.com",
+            "password": "albra1234"
+        },
+        {
+            "login_name": "charlie@delta.echo",
+            "password": "chadecho"
+        }
+    ]
+}
