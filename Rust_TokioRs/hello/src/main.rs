@@ -1,6 +1,7 @@
 extern crate hello;
 extern crate tokio;
 
+use std::env;
 use tokio::prelude::*;
 
 fn run_server(server_ip : &str, server_port : u32) -> std::io::Result<()>
@@ -33,7 +34,15 @@ fn run_server(server_ip : &str, server_port : u32) -> std::io::Result<()>
 }
 
 fn main() {
-    let loaded = hello::Sample::new_from_file("sample.json");
+    let args : Vec<String> = env::args().collect();
+
+    let filename = if args.len() < 2 {
+        "sample.json"
+    } else {
+        args[1].as_str()
+    };
+
+    let loaded = hello::Sample::new_from_file(filename);
 
     println!("server : {} : {}", loaded.server_ip(), loaded.server_port());
     for account in loaded.accounts().iter() {

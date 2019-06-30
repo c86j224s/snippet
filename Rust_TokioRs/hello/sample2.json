@@ -1,0 +1,10 @@
+{
+    "server_ip": "127.0.0.1",
+    "server_port": 8901,
+    "accounts": [
+        {
+            "login_name": "i.am@watching.you",
+            "password": "well-known"
+        }
+    ]
+}
