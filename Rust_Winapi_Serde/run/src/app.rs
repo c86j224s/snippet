@@ -48,13 +48,13 @@ impl App {
         };
         let file_name = format!("{}.exe", self.name());
 
-        let mut start_server = Command::new("cmd.exe");
-        start_server.arg("/c").arg("start").arg("/d").arg(directory).arg(file_name);
+        let mut start_app = Command::new("cmd.exe");
+        start_app.arg("/c").arg("start").arg("/d").arg(directory).arg(file_name);
         if !self.opt_arg.is_empty() {
-            start_server.arg(&self.opt_arg);
+            start_app.arg(&self.opt_arg);
         }
 
-        start_server.spawn()?;
+        start_app.spawn()?;
 
         Ok(())
     }
@@ -63,10 +63,10 @@ impl App {
     pub fn kill(&self) -> std::io::Result<()> {
         let file_name = format!("{}.exe", self.name());
 
-        let mut kill_server = Command::new("cmd.exe");
-        kill_server.arg("/c").arg("taskkill").arg("/im").arg(file_name);
+        let mut kill_app = Command::new("cmd.exe");
+        kill_app.arg("/c").arg("taskkill").arg("/im").arg(file_name);
 
-        kill_server.spawn()?;
+        kill_app.spawn()?;
 
         Ok(())
     }
