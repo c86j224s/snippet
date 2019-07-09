@@ -29,12 +29,19 @@ impl App {
         &self.name
     }
 
+    #[cfg(windows)]
     pub fn executable_name(&self) -> String {
         format!("{}.exe", self.name)
     }
 
 
-    pub fn run(&self, config : BuildConfiguration) -> std::io::Result<()> {
+    #[cfg(not(windows))]
+    pub fn executable_name(&self) -> String {
+        self.name.clone()
+    }
+
+
+    pub fn run(&self, config : &BuildConfiguration) -> std::io::Result<()> {
         let directory = match config {
             BuildConfiguration::Debug => &self.debug_path,
             BuildConfiguration::Release => &self.release_path

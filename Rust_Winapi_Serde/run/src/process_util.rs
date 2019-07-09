@@ -1,6 +1,9 @@
 #[cfg(windows)]
 extern crate winapi;
 
+#[cfg(not(windows))]
+extern crate psutil;
+
 
 #[cfg(windows)]
 pub fn str_to_wide(msg : &str) -> Vec<u16> {
@@ -51,6 +54,7 @@ pub fn enum_processes() -> Result<Vec<u32>, std::io::Error> {
 
     Ok(ret)
 }
+
 
 #[cfg(windows)]
 pub fn get_process_name(process_id : u32) -> Result<std::string::String, std::io::Error> {
@@ -111,6 +115,22 @@ pub fn find_process_id_by_name(process_name : &str) -> Option<u32> {
 
         if pname == process_name.to_ascii_lowercase() {
             return Some(pid);
+        }
+    }
+
+    None
+}
+
+#[cfg(not(windows))]
+pub fn find_process_id_by_name(process_name : &str) -> Option<u32> {
+    let mut all_procs : Vec<psutil::process::Process> = match psutil::process::all() {
+        Ok(procs) => procs,
+        Err(e) => return None
+    };
+
+    for process in all_procs {
+        if process.comm.to_ascii_lowercase() == process_name.to_ascii_lowercase() {
+            return Some(process.pid as u32);
         }
     }
 

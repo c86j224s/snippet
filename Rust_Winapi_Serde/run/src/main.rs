@@ -15,6 +15,20 @@ fn main() {
     let apps = Apps::new_from_file("apps.json");
 
     if args[1].to_ascii_lowercase() == "start" {
+        if args.len() < 3 {
+            println!("argument required more.");
+            return;
+        }
+
+        let build_config = match args[2].to_ascii_lowercase().as_str() {
+            "debug" => BuildConfiguration::Debug,
+            "release" => BuildConfiguration::Release,
+            _ => {
+                println!("build configuration should be 'debug' or 'release'");
+                return;
+            }
+        };
+
         for app in apps.app_list().iter() {
             let found = match find_process_id_by_name(app.executable_name().as_str()) {
                 None => false,
@@ -26,7 +40,7 @@ fn main() {
                 continue;
             }
 
-            match app.run(BuildConfiguration::Debug) {
+            match app.run(&build_config) {
                 Err(e) => println!("{} start failed. {:?}", app.name(), e),
                 Ok(_) => println!("{} started.", app.name())
             };
