@@ -41,15 +41,15 @@ impl App {
     }
 
 
+    #[cfg(windows)]
     pub fn run(&self, config : &BuildConfiguration) -> std::io::Result<()> {
         let directory = match config {
             BuildConfiguration::Debug => &self.debug_path,
             BuildConfiguration::Release => &self.release_path
         };
-        let file_name = format!("{}.exe", self.name());
 
         let mut start_app = Command::new("cmd.exe");
-        start_app.arg("/c").arg("start").arg("/d").arg(directory).arg(file_name);
+        start_app.arg("/c").arg("start").arg("/d").arg(directory).arg(self.executable_name().as_str());
         if !self.opt_arg.is_empty() {
             start_app.arg(&self.opt_arg);
         }
@@ -59,12 +59,37 @@ impl App {
         Ok(())
     }
 
+    #[cfg(not(windows))]
+    pub fn run(&self, config : &BuildConfiguration) -> std::io::Result<()> {
+        let directory = match config {
+            BuildConfiguration::Debug => &self.debug_path,
+            BuildConfiguration::Release => &self.release_path
+        };
+        let executable_path = format!("{}/{}", directory, self.executable_name());
 
+        let mut start_app = Command::new(executable_path);
+
+        start_app.spawn()?;
+
+        Ok(())
+    }
+
+
+    #[cfg(windows)]
     pub fn kill(&self) -> std::io::Result<()> {
-        let file_name = format!("{}.exe", self.name());
-
         let mut kill_app = Command::new("cmd.exe");
-        kill_app.arg("/c").arg("taskkill").arg("/im").arg(file_name);
+        kill_app.arg("/c").arg("taskkill").arg("/im").arg(self.executable_name().as_str());
+
+        kill_app.spawn()?;
+
+        Ok(())
+    }
+
+
+    #[cfg(not(windows))]
+    pub fn kill(&self) -> std::io::Result<()> {
+        let mut kill_app = Command::new("killall");
+        kill_app.arg("-9").arg(self.executable_name());
 
         kill_app.spawn()?;
 
