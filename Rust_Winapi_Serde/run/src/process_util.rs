@@ -123,6 +123,7 @@ pub fn find_process_id_by_name(process_name : &str) -> Option<u32> {
 
 #[cfg(not(windows))]
 pub fn find_process_id_by_name(process_name : &str) -> Option<u32> {
+    use psutil::process;
     let mut all_procs : Vec<psutil::process::Process> = match psutil::process::all() {
         Ok(procs) => procs,
         Err(e) => return None

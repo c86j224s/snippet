@@ -1,7 +1,45 @@
-extern crate run;
+extern crate argparse;
 
 use run::app::{Apps, BuildConfiguration};
 use run::process_util::find_process_id_by_name;
+
+
+struct Opts {
+    command : String,
+    app : String,
+    release : bool
+}
+
+impl Opts {
+    fn new() -> Opts {
+        Opts {
+            command : String::new(),
+            app : String::new(),
+            release : true
+        }
+    }
+}
+
+
+fn parse_args() -> Opts {
+    let mut opts = Opts::new();
+
+    {
+        use argparse::{ArgumentParser, Store, StoreTrue, StoreFalse};
+        let mut ap = ArgumentParser::new();
+
+        ap.refer(&mut opts.command).add_argument("command", Store, "Command to execute. 'start' or 'stop'").required();
+        ap.refer(&mut opts.app).add_option(&["-P", "--app"], Store, "Specific app name.");
+        ap.refer(&mut opts.release)
+            .add_option(&["-R", "--release"], StoreTrue, "Do with release build.")
+            .add_option(&["-D", "--debug"], StoreFalse, "Do with debug build.");
+
+        ap.parse_or_exit();
+    }
+
+    opts
+}
+
 
 
 fn main() {
