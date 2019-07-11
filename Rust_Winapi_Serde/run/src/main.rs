@@ -3,7 +3,7 @@ extern crate argparse;
 use std::str::FromStr;
 
 use run::app::{Apps, BuildConfiguration};
-use run::process_util::find_process_id_by_name;
+use run::process_util::{ProcAccessor, sys::Proc};
 
 
 enum Command {
@@ -73,7 +73,7 @@ fn main() {
                     }
                 }
 
-                let found = match find_process_id_by_name(app.executable_name().as_str()) {
+                let found = match Proc::find_process_by_name(app.executable_name().as_str()) {
                     None => false,
                     Some(_) => true
                 };
@@ -97,7 +97,7 @@ fn main() {
                     }
                 }
 
-                let found = match find_process_id_by_name(app.executable_name().as_str()) {
+                let found = match Proc::find_process_by_name(app.executable_name().as_str()) {
                     None => false,
                     Some(_) => true
                 };
@@ -116,5 +116,4 @@ fn main() {
 
         }
     }
-
 }
