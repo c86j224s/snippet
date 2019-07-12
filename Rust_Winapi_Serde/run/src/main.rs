@@ -46,7 +46,6 @@ impl Opts {
                 .add_option(&["-R", "--release"], StoreTrue, "Do with release build.")
                 .add_option(&["-D", "--debug"], StoreFalse, "Do with debug build.");
 
-            ap.stop_on_first_argument(true);
             ap.parse_args_or_exit();
         }
 

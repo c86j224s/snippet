@@ -3,7 +3,7 @@ use crate::file_read::read_file_all;
 use std::io::Result;
 use std::io::prelude::*;
 use std::fmt::Debug;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use serde_json;
 use serde::{Serialize, Deserialize};
@@ -41,33 +41,23 @@ impl App {
     }
 
 
-    #[cfg(windows)]
     pub fn run(&self, config : &BuildConfiguration) -> std::io::Result<()> {
-        let directory = match config {
+         let directory = match config {
             BuildConfiguration::Debug => &self.debug_path,
             BuildConfiguration::Release => &self.release_path
         };
 
-        let mut start_app = Command::new("cmd.exe");
-        start_app.arg("/c").arg("start").arg("/d").arg(directory).arg(self.executable_name().as_str());
+        let dir_path = std::fs::canonicalize(directory)?;
+        let exe_path = std::fs::canonicalize(
+            format!("{}/{}", directory, self.executable_name().as_str())
+        )?;
+
+        let mut start_app = Command::new(exe_path);
+        start_app.current_dir(dir_path);
+        start_app.stdout(Stdio::null()).stderr(Stdio::null());
         if !self.opt_arg.is_empty() {
             start_app.arg(&self.opt_arg);
         }
-
-        start_app.spawn()?;
-
-        Ok(())
-    }
-
-    #[cfg(not(windows))]
-    pub fn run(&self, config : &BuildConfiguration) -> std::io::Result<()> {
-        let directory = match config {
-            BuildConfiguration::Debug => &self.debug_path,
-            BuildConfiguration::Release => &self.release_path
-        };
-        let executable_path = format!("{}/{}", directory, self.executable_name());
-
-        let mut start_app = Command::new(executable_path);
 
         start_app.spawn()?;
 
