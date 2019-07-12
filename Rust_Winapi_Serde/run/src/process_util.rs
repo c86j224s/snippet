@@ -27,7 +27,7 @@ pub mod sys {
 
 #[cfg(windows)]
 pub struct WinProc {
-    pid : u16
+    pid : u32
 }
 
 #[cfg(windows)]
@@ -41,7 +41,7 @@ impl WinProc {
     fn message_box(msg : &str) -> Result<(), std::io::Error> {
         use winapi::um::winuser::{MessageBoxW, MB_OK};
 
-        let msg_wide = str_to_wide(msg);
+        let msg_wide = Self::str_to_wide(msg);
         let ret = unsafe {
             MessageBoxW(std::ptr::null_mut(), msg_wide.as_ptr(), msg_wide.as_ptr(), MB_OK)
         };
@@ -60,7 +60,7 @@ impl WinProc {
 impl ProcAccessor for WinProc {
     type Item = WinProc;
 
-    pub fn enum_processes() -> std::io::Result<Vec<Item>> {
+    fn enum_processes() -> std::io::Result<Vec<Self::Item>> {
         use winapi::shared::minwindef::DWORD;
         use winapi::um::psapi::EnumProcesses;
 
@@ -75,7 +75,7 @@ impl ProcAccessor for WinProc {
             return Err(std::io::Error::last_os_error());
         }
 
-        let mut ret : Vec<T> = Default::default();
+        let mut ret : Vec<Self::Item> = Default::default();
         for process_id in lpid_processes.iter() {
             if *process_id != 0 {
                 ret.push(WinProc{ pid: *process_id });
@@ -86,7 +86,7 @@ impl ProcAccessor for WinProc {
     }
 
     
-    pub fn get_process_name(&self) -> std::io::Result<String> {
+    fn get_process_name(&self) -> std::io::Result<String> {
         use winapi::um::processthreadsapi::OpenProcess;
         use winapi::um::psapi::{EnumProcessModules, GetModuleBaseNameW};
         use winapi::um::winnt::{PROCESS_QUERY_INFORMATION, PROCESS_VM_READ};
@@ -129,8 +129,8 @@ impl ProcAccessor for WinProc {
         Ok(String::from_utf16_lossy(&base_name[0..name_len as usize]))
     }
 
-    pub fn find_process_id_by_name(process_name : &str) -> Option<Item> {
-        let proc_vec = match enum_processes() {
+    fn find_process_id_by_name(process_name : &str) -> Option<Self::Item> {
+        let proc_vec = match Self::enum_processes() {
             Err(_) => { return None; },
             Ok(v) => v
         };
@@ -142,7 +142,7 @@ impl ProcAccessor for WinProc {
             };
 
             if pname == process_name.to_ascii_lowercase() {
-                return Some(proc.pid);
+                return Some(proc);
             }
         }
 
