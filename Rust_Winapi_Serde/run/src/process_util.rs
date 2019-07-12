@@ -129,7 +129,7 @@ impl ProcAccessor for WinProc {
         Ok(String::from_utf16_lossy(&base_name[0..name_len as usize]))
     }
 
-    fn find_process_id_by_name(process_name : &str) -> Option<Self::Item> {
+    fn find_process_by_name(process_name : &str) -> Option<Self::Item> {
         let proc_vec = match Self::enum_processes() {
             Err(_) => { return None; },
             Ok(v) => v
