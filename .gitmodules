@@ -1,0 +1,3 @@
+[submodule "Rust_AsyncStd/helloasync"]
+	path = Rust_AsyncStd/helloasync
+	url = /Users/allthatcode/github/c86j224s/snippet/Rust_AsyncStd/helloasync
