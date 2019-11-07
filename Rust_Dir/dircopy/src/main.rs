@@ -23,6 +23,12 @@ impl Dirs {
         Ok(format!("{:x}", self.file_hash(file_path)?))
     }
 
+    fn path_to_pathbuf_lowercase(&self, file_path: &Path) -> PathBuf {
+        let lowercase_path_str = file_path.as_os_str().to_string_lossy().to_lowercase();
+
+        Path::new(&lowercase_path_str).to_path_buf()
+    }
+
     fn scan_dir(&mut self, dir_path: &Path, base_path: &Path) -> std::io::Result<()> {
         let meta = std::fs::metadata(dir_path)?;
         if meta.is_dir() {
@@ -32,7 +38,14 @@ impl Dirs {
         }
         else if meta.is_file() {
             let rel_path = dir_path.strip_prefix(base_path).unwrap();
-            self.0.insert(rel_path.to_path_buf(), self.file_hash_str(&dir_path)?);
+
+            
+            #[cfg(windows)]
+            let rel_pathbuf = self.path_to_pathbuf_lowercase(rel_path);
+            #[cfg(target_os = "linux")]
+            let rel_pathbuf = rel_path.to_path_buf();
+            
+            self.0.insert(rel_pathbuf, self.file_hash_str(&dir_path)?);
         }
 
         Ok(())
@@ -128,20 +141,29 @@ impl DirDiff {
         Ok(())
     }
 
-    pub fn merge_source_from_target(&self) -> std::io::Result<()> {
+    fn merge(&self, from_path: &PathBuf, to_path: &PathBuf) -> std::io::Result<()> {
+        
         for (file_path, _) in self.added_dirs.iter() {
-            self.copy_file(self.target_path.as_path(), self.source_path.as_path(), &file_path)?;
+            self.copy_file(from_path.as_path(), to_path.as_path(), &file_path)?;
         }
 
         for (file_path, _) in self.changed_dirs.iter() {
-            self.copy_file(self.target_path.as_path(), self.source_path.as_path(), &file_path)?;
+            self.copy_file(from_path.as_path(), to_path.as_path(), &file_path)?;
         }
 
         for (file_path, _) in self.removed_dirs.iter() {
-            std::fs::remove_file(self.source_path.as_path().join(&file_path)).unwrap();    
+            std::fs::remove_file(to_path.as_path().join(&file_path)).unwrap();    
         }
 
         Ok(())
+    }
+
+    pub fn merge_source_from_target(&self) -> std::io::Result<()> {
+        self.merge(&self.target_path, &self.source_path)
+    }
+
+    pub fn merge_target_from_source(&self) -> std::io::Result<()> {
+        self.merge(&self.source_path, &self.target_path)
     }
 }
 
