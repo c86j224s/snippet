@@ -40,7 +40,13 @@ impl GlobalStorage {
         })
     }
 
-    fn set(&self, id: usize, msg: Message) {
+    fn clone(&self) -> GlobalStorage {
+        GlobalStorage {
+            database: self.database.clone()
+        }
+    }
+
+    async fn set_async(&self, id: usize, msg: Message) {
         let contents = &mut self.database.lock().unwrap().message_storage;
 
         if contents.contains_key(&id) {
@@ -51,7 +57,7 @@ impl GlobalStorage {
         contents.insert(id, msg);
     }
 
-    fn get(&self, id: usize) -> Option<Message> {
+    async fn get_async(&self, id: usize) -> Option<Message> {
         let contents = &self.database.lock().unwrap().message_storage;
 
         match contents.get(&id) {
@@ -60,11 +66,6 @@ impl GlobalStorage {
         }
     }
 
-    fn clone(&self) -> GlobalStorage {
-        GlobalStorage {
-            database: self.database.clone()
-        }
-    }
 
     async fn delay(&self) {
         println!("delaying...");
@@ -74,7 +75,27 @@ impl GlobalStorage {
 
 }
 
-async fn handle_post(mut req: Request<GlobalStorage>) -> Response { 
+async fn handle_msg_get(req: Request<GlobalStorage>) -> Response {
+    let id = match req.param("id").client_err() {
+        Ok(v) => v,
+        Err(e) => return e.into_response()
+    };
+
+    let cloned_state = { req.state().clone() };
+
+    if let Some(msg) = cloned_state.get_async(id).await {
+        match Response::new(StatusCode::OK.into()).body_json(&msg) {
+            Ok(v) => v,
+            _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
+            
+        }
+    }
+    else {
+        Response::new(StatusCode::NOT_FOUND.into())
+    }
+}
+
+async fn handle_msg_post(mut req: Request<GlobalStorage>) -> Response { 
     let msg = match req.body_json().await.client_err() {
         Ok(v) => v,
         Err(e) => {
@@ -90,26 +111,10 @@ async fn handle_post(mut req: Request<GlobalStorage>) -> Response {
         }
     };
 
-    req.state().set(id, msg);
+    let cloned_state = { req.state().clone() };
+
+    cloned_state.set_async(id, msg).await;
     Response::new(StatusCode::OK.into()).body_string("".to_owned())
-}
-
-async fn handle_get(req: Request<GlobalStorage>) -> Response {
-    let id = match req.param("id").client_err() {
-        Ok(v) => v,
-        Err(e) => return e.into_response()
-    };
-
-    if let Some(msg) = req.state().get(id) {
-        match Response::new(StatusCode::OK.into()).body_json(&msg) {
-            Ok(v) => v,
-            _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
-            
-        }
-    }
-    else {
-        Response::new(StatusCode::NOT_FOUND.into())
-    }
 }
 
 async fn handle_delay(req: Request<GlobalStorage>) -> Response {
@@ -120,50 +125,6 @@ async fn handle_delay(req: Request<GlobalStorage>) -> Response {
     cloned_state.delay().await;
     Response::new(StatusCode::OK.into()).body_string("ok.".to_owned())
 }
-
-/*
-struct Database {
-    contents: Mutex<HashMap<usize, Message>>,
-    static_file_server: Mutex<StaticFileHandler>
-}
-
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Message {
-    author: Option<String>,
-    contents: String
-}
-
-impl Database {
-    async fn new(root_path: &str) -> std::io::Result<Database> {
-        Ok(Database {
-            contents: Default::default(),
-            static_file_server: Mutex::new(StaticFileHandler::new(root_path).await?)
-        })
-    }
-
-    fn set(&self, id: usize, msg: Message) {
-        let mut contents = self.contents.lock().unwrap();
-
-        if contents.contains_key(&id) {
-            contents.entry(id).and_modify(|v| *v = msg);
-            return
-        }
-
-        contents.insert(id, msg);
-    }
-
-    fn get(&self, id: usize) -> Option<Message> {
-        let mut contents = self.contents.lock().unwrap();
-
-        match contents.get(&id) {
-            Some(v) => Some(v.clone()),
-            None => None
-        }
-    }
-}
-*/
-
 
 struct StaticFileHandler {
     root_path: PathBuf,
@@ -180,7 +141,7 @@ impl StaticFileHandler {
         })
     }
 
-    /*
+/*
     async fn check_valid_path(&self, input_path: &Path) -> std::io::Result<bool> {
         let abs_input_path = fs::canonicalize(input_path).await?;
 
@@ -228,51 +189,20 @@ impl StaticFileHandler {
 
 
 /*
-async fn handle_post(mut req: Request<Database>) -> Response { 
-    let mut msg = match req.body_json().await.client_err() {
-        Ok(v) => v,
-        Err(e) => return e.into_response()
-    };
-    let id = match req.param("id").client_err() {
-        Ok(v) => v,
-        Err(e) =>  return e.into_response()
-    };
-
-    req.state().set(id, msg);
-    Response::new(StatusCode::OK.into()).body_string("".to_owned())
-}
-
-async fn handle_get(mut req: Request<Database>) -> Response {
-    let id = match req.param("id").client_err() {
-        Ok(v) => v,
-        Err(e) => return e.into_response()
-    };
-
-    if let Some(msg) = req.state().get(id) {
-        match Response::new(StatusCode::OK.into()).body_json(&msg) {
-            Ok(v) => v,
-            _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
-            
-        }
-    }
-    else {
-        Response::new(StatusCode::NOT_FOUND.into())
-    }
-}
-
-async fn handle_get_static(mut req: Request<Database>) -> Response {
+async fn handle_get_static(req: Request<GlobalStorage>) -> Response {
     let rel_path_buf = req.uri().path().to_owned();
     let rel_path = Path::new(&rel_path_buf[7..]);
 
-    let mut sfs = req.state().static_file_server.lock().unwrap();
+    let mut cloned_database = {
+        req.state().database.clone()
+    };
 
-    match sfs.get_cached_file(&rel_path).await {
+    match cloned_database.lock().unwrap().static_file_server.get_cached_file(&rel_path).await {
         //Ok(v) => Response::new(StatusCode::OK.into()).body_string(*v),
         Ok(v) => Response::new(StatusCode::OK.into()),
         _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
     }
 }
-
 */
 
 
@@ -282,7 +212,8 @@ async fn main() -> std::io::Result<()> {
 
     let mut app = Server::with_state(database);
     app.at("/").get(|_| async move { "Hello, world!" });
-    app.at("/message/:id").post(handle_post).get(handle_get);
+    //app.at("/message/:id").post(handle_post).get(handle_get);
+    app.at("/msg/:id").post(handle_msg_post).get(handle_msg_get);
     app.at("/delay").get(handle_delay);
     //app.at("/static/*").get(handle_get_static);
     app.listen("127.0.0.1:9876").await?;
