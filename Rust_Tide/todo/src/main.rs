@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::{Mutex, Arc};
+use std::time::Duration;
 
-use async_std::{fs, path::{Path, PathBuf}};
+use async_std::{fs, path::{Path, PathBuf}, task};
 
 use http::status::StatusCode;
 
@@ -11,6 +12,116 @@ use serde::{Deserialize, Serialize};
 use tide::{prelude::*, IntoResponse, Request, Response, ResultExt, Server};
 
 
+struct GlobalStorage {
+    database: Arc<Mutex<Database>>
+}
+
+
+struct Database {
+    message_storage: HashMap<usize, Message>,
+    static_file_server: StaticFileHandler
+}
+
+
+#[derive(Serialize, Deserialize, Clone)]
+struct Message {
+    author: Option<String>,
+    contents: String
+}
+
+
+impl GlobalStorage {
+    async fn new(root_path: &str) -> std::io::Result<GlobalStorage> {
+        Ok(GlobalStorage {
+            database: Arc::new(Mutex::new(Database {
+                message_storage: Default::default(),
+                static_file_server: StaticFileHandler::new(root_path).await?
+            }))
+        })
+    }
+
+    fn set(&self, id: usize, msg: Message) {
+        let contents = &mut self.database.lock().unwrap().message_storage;
+
+        if contents.contains_key(&id) {
+            contents.entry(id).and_modify(|v| *v = msg);
+            return
+        }
+
+        contents.insert(id, msg);
+    }
+
+    fn get(&self, id: usize) -> Option<Message> {
+        let contents = &self.database.lock().unwrap().message_storage;
+
+        match contents.get(&id) {
+            Some(v) => Some(v.clone()),
+            None => None
+        }
+    }
+
+    fn clone(&self) -> GlobalStorage {
+        GlobalStorage {
+            database: self.database.clone()
+        }
+    }
+
+    async fn delay(&self) {
+        println!("delaying...");
+        task::sleep(Duration::from_secs(3)).await;
+        println!("done...");
+    }
+
+}
+
+async fn handle_post(mut req: Request<GlobalStorage>) -> Response { 
+    let msg = match req.body_json().await.client_err() {
+        Ok(v) => v,
+        Err(e) => {
+            println!("body json parse failed. e = {:#?}", e);
+            return e.into_response()
+        }
+    };
+    let id = match req.param("id").client_err() {
+        Ok(v) => v,
+        Err(e) => {
+            println!("param id is not found. {:#?}", e);
+            return e.into_response()
+        }
+    };
+
+    req.state().set(id, msg);
+    Response::new(StatusCode::OK.into()).body_string("".to_owned())
+}
+
+async fn handle_get(req: Request<GlobalStorage>) -> Response {
+    let id = match req.param("id").client_err() {
+        Ok(v) => v,
+        Err(e) => return e.into_response()
+    };
+
+    if let Some(msg) = req.state().get(id) {
+        match Response::new(StatusCode::OK.into()).body_json(&msg) {
+            Ok(v) => v,
+            _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
+            
+        }
+    }
+    else {
+        Response::new(StatusCode::NOT_FOUND.into())
+    }
+}
+
+async fn handle_delay(req: Request<GlobalStorage>) -> Response {
+    let cloned_state = {
+        req.state().clone()
+    };
+
+    cloned_state.delay().await;
+    Response::new(StatusCode::OK.into()).body_string("ok.".to_owned())
+}
+
+/*
 struct Database {
     contents: Mutex<HashMap<usize, Message>>,
     static_file_server: Mutex<StaticFileHandler>
@@ -51,6 +162,7 @@ impl Database {
         }
     }
 }
+*/
 
 
 struct StaticFileHandler {
@@ -68,6 +180,7 @@ impl StaticFileHandler {
         })
     }
 
+    /*
     async fn check_valid_path(&self, input_path: &Path) -> std::io::Result<bool> {
         let abs_input_path = fs::canonicalize(input_path).await?;
 
@@ -110,9 +223,11 @@ impl StaticFileHandler {
             None => Err(std::io::Error::from(std::io::ErrorKind::NotFound))
         }
     }
+    */
 }
 
 
+/*
 async fn handle_post(mut req: Request<Database>) -> Response { 
     let mut msg = match req.body_json().await.client_err() {
         Ok(v) => v,
@@ -158,16 +273,18 @@ async fn handle_get_static(mut req: Request<Database>) -> Response {
     }
 }
 
+*/
 
 
 #[async_std::main]
 async fn main() -> std::io::Result<()> {
-    let database = Database::new("./static_files/").await?;
+    let database = GlobalStorage::new("./static_files/").await?;
 
     let mut app = Server::with_state(database);
     app.at("/").get(|_| async move { "Hello, world!" });
     app.at("/message/:id").post(handle_post).get(handle_get);
-    app.at("/static/*").get(handle_get_static);
-    app.listen("127.0.0.1:8080").await?;
+    app.at("/delay").get(handle_delay);
+    //app.at("/static/*").get(handle_get_static);
+    app.listen("127.0.0.1:9876").await?;
     Ok(())
 }
