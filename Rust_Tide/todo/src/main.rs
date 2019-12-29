@@ -131,10 +131,9 @@ async fn handle_delay(req: Request<GlobalStorage>) -> Response {
 }
 
 async fn handle_get_static(req: Request<GlobalStorage>) -> Response {
-    // todo: fix verifying rules...
     let input_path_buf = req.uri().path().to_owned();
-    let regined_path_string = format!("./static_files/{}", &input_path_buf[8..]);
-    let rel_path = Path::new(&regined_path_string);
+    let refined_path_string = format!("./static_files/{}", &input_path_buf[8..]);
+    let rel_path = Path::new(&refined_path_string);
 
     let cloned_state = {
         req.state().clone()
@@ -147,6 +146,24 @@ async fn handle_get_static(req: Request<GlobalStorage>) -> Response {
         Err(e) => {
             println!("get static async failed. {:#?}", e);
             Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
+        }
+    }
+}
+
+async fn handle_index(req: Request<GlobalStorage>) -> Response {
+    let rel_path = Path::new("./static_files/index.html");
+
+    let cloned_state = {
+        req.state().clone()
+    };
+
+    match cloned_state.get_static_async(&rel_path).await {
+        Ok(v) => {
+            Response::new(StatusCode::OK.into()).body_string(v.lock().unwrap().to_owned()).set_mime(mime::TEXT_HTML_UTF_8)
+        },
+        Err(e) => {
+            println!("get index async failed. {:#?}", e);
+            Response::new(StatusCode::OK.into()).body_string(format!("Hello, Tide! There's no index page."))
         }
     }
 }
@@ -261,7 +278,8 @@ async fn main() -> std::io::Result<()> {
     let database = GlobalStorage::new("./static_files/").await?;
 
     let mut app = Server::with_state(database);
-    app.at("/").get(|_| async move { "Hello, world!" });
+    //app.at("/").get(|_| async move { "Hello, world!" });
+    app.at("/").get(handle_index);
     app.at("/msg/:id").post(handle_msg_post).get(handle_msg_get);
     app.at("/delay").get(handle_delay);
     app.at("/static/*").get(handle_get_static);
