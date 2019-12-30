@@ -18,7 +18,7 @@ fn main() {
 
     for post in results {
         println!("{}", post.title);
-        println!("-----------\n");
+        println!("-----------");
         println!("{}", post.body);
     }
 }

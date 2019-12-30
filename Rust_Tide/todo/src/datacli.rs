@@ -11,3 +11,5 @@ pub fn establish_connection() -> MysqlConnection {
     MysqlConnection::establish(&database_url)
         .expect(&format!("Error connecting to {}", database_url))
 }
+
+
