@@ -1,5 +1,7 @@
+use chrono::{prelude::*, NaiveDateTime};
+
 use diesel::Queryable;
-use crate::schema::posts;
+use crate::schema::{posts, note};
 
 #[derive(Queryable)]
 pub struct Posts {
@@ -15,4 +17,25 @@ pub struct Posts {
 pub struct NewPost<'a> {
     pub title: &'a str,
     pub body: &'a str,
+}
+
+
+#[derive(Queryable)]
+pub struct Note {
+    pub id: u64,
+    pub title: String,
+    pub body: String,
+    pub published: bool,
+    pub created: NaiveDateTime,
+    pub updated: NaiveDateTime,
+}
+
+
+#[derive(Insertable)]
+#[table_name="note"]
+pub struct NewNote<'a> {
+    pub title: &'a str,
+    pub body: &'a str,
+    pub created: NaiveDateTime,
+    pub updated: NaiveDateTime, 
 }
