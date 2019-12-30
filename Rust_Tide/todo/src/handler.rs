@@ -4,7 +4,7 @@ use http::status::StatusCode;
 
 use tide::{prelude::*, IntoResponse, Request, Response, ResultExt, Server};
 
-use crate::global::GlobalState;
+use crate::{global::GlobalState, note::NewNote};
 
 
 pub async fn server_run() -> std::io::Result<()> {
@@ -15,6 +15,7 @@ pub async fn server_run() -> std::io::Result<()> {
     app.at("/").get(handle_index);
     app.at("/msg/:id").post(handle_msg_post).get(handle_msg_get);
     app.at("/delay").get(handle_delay);
+    app.at("/note").post(handle_note_create);
     app.at("/static/*").get(handle_get_static);
     app.listen("127.0.0.1:9876").await?;
     Ok(())
@@ -103,4 +104,18 @@ pub async fn handle_index(req: Request<GlobalState>) -> Response {
             Response::new(StatusCode::OK.into()).body_string(format!("Hello, Tide! There's no index page."))
         }
     }
+}
+
+pub async fn handle_note_create(mut req: Request<GlobalState>) -> Response {
+     let new_note: NewNote = match req.body_json().await.client_err() {
+        Ok(v) => v,
+        Err(e) => {
+            println!("body json parse failed. e = {:#?}", e);
+            return e.into_response()
+        }
+    };
+
+    new_note.create().await;
+
+    Response::new(StatusCode::OK.into())
 }

@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use diesel::{MysqlConnection, no_arg_sql_function, types::*};
+use diesel::{MysqlConnection, no_arg_sql_function, types::{Unsigned, Bigint}};
 use dotenv::dotenv;
 use std::env;
 
