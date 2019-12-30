@@ -1,11 +1,14 @@
 use diesel::prelude::*;
-use diesel::MysqlConnection;
+use diesel::{MysqlConnection, no_arg_sql_function, types::*};
 use dotenv::dotenv;
 use std::env;
 
 use chrono::{prelude::*, NaiveDateTime};
 
 use crate::model::{Note, NewNote};
+
+
+no_arg_sql_function!(last_insert_id, Unsigned<Bigint>, "Last Inserted PK");
 
 
 // pooled???
@@ -40,7 +43,7 @@ pub fn create_note<'a>(
     conn: &MysqlConnection,
     title: &'a str,
     body: &'a str
-) -> usize {
+) -> (usize, u64) {
     use crate::schema::note;
 
     let now = diesel::select(diesel::dsl::now).get_result::<NaiveDateTime>(conn).unwrap();
@@ -57,7 +60,11 @@ pub fn create_note<'a>(
         .execute(conn)
         .unwrap();
 
-    rows_inserted
+    let last_inserted_id: u64 = diesel::select(last_insert_id)
+        .first(conn)
+        .unwrap();
+
+    (rows_inserted, last_inserted_id)
 }
 
 
