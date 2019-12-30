@@ -71,6 +71,8 @@ pub fn create_note<'a>(
 pub fn publish_note(conn: &MysqlConnection, target_id: u64) -> usize {
     use crate::schema::note::dsl::*;
 
+    // todo: change updated 
+
     let rows_updated = diesel::update(note.filter(id.eq(target_id)))
         .set(published.eq(true))
         .execute(conn)

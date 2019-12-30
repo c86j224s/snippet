@@ -1,6 +1,9 @@
 use chrono::{prelude::*, NaiveDateTime};
 
 use diesel::Queryable;
+
+use serde::{Serialize, Deserialize};
+
 use crate::schema::{posts, note};
 
 #[derive(Queryable)]
@@ -20,6 +23,7 @@ pub struct NewPost<'a> {
 }
 
 
+#[derive(Serialize, Deserialize)]
 #[derive(Queryable)]
 pub struct Note {
     pub id: u64,

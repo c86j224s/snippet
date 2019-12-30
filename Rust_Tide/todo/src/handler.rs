@@ -4,9 +4,10 @@ use http::status::StatusCode;
 
 use tide::{prelude::*, IntoResponse, Request, Response, ResultExt, Server};
 
-use crate::{global::GlobalState, note::NewNote};
+use crate::{global::GlobalState, note::{NewNote, NoteRequest}};
 
 
+// todo: redesign uri -_-;;
 pub async fn server_run() -> std::io::Result<()> {
     let database = GlobalState::new("./static_files/").await?;
 
@@ -15,7 +16,10 @@ pub async fn server_run() -> std::io::Result<()> {
     app.at("/").get(handle_index);
     app.at("/msg/:id").post(handle_msg_post).get(handle_msg_get);
     app.at("/delay").get(handle_delay);
-    app.at("/note").post(handle_note_create);
+    app.at("/note").post(handle_note_create).get(handle_notes);
+    app.at("/note/publish").get(handle_notes_published);
+    app.at("/note/:id").delete(handle_note_delete);
+    app.at("/note/:id/publish").post(handle_note_publish);
     app.at("/static/*").get(handle_get_static);
     app.listen("127.0.0.1:9876").await?;
     Ok(())
@@ -118,4 +122,50 @@ pub async fn handle_note_create(mut req: Request<GlobalState>) -> Response {
     new_note.create().await;
 
     Response::new(StatusCode::OK.into())
+}
+
+pub async fn handle_note_publish(mut req: Request<GlobalState>) -> Response {
+    let id = match req.param("id").client_err() {
+        Ok(v) => v,
+        Err(e) => {
+            println!("param id is not found. {:#?}", e);
+            return e.into_response()
+        }
+    };
+
+    NoteRequest{ id: id }.publish().await;
+
+    Response::new(StatusCode::OK.into())
+}
+
+pub async fn handle_note_delete(mut req: Request<GlobalState>) -> Response {
+    let id = match req.param("id").client_err() {
+        Ok(v) => v,
+        Err(e) => {
+            println!("param id is not found. {:#?}", e);
+            return e.into_response()
+        }
+    };
+
+    NoteRequest{ id: id }.delete().await;
+
+    Response::new(StatusCode::OK.into())
+}
+
+pub async fn handle_notes(req: Request<GlobalState>) -> Response {
+    let notes = NoteRequest{ id: 0 }.show().await;
+
+    match Response::new(StatusCode::OK.into()).body_json(&notes) {
+        Ok(v) => v,
+        _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
+    }
+}
+
+pub async fn handle_notes_published(req: Request<GlobalState>) -> Response {
+    let notes = NoteRequest{ id: 0 }.show_published().await;
+
+    match Response::new(StatusCode::OK.into()).body_json(&notes) {
+        Ok(v) => v,
+        _ => Response::new(StatusCode::INTERNAL_SERVER_ERROR.into())
+    }
 }
