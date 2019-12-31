@@ -1,7 +1,33 @@
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::sync::{Mutex, Arc};
 
 use async_std::{fs, path::{Path, PathBuf}};
+
+use mime::Mime;
+
+
+pub struct FileInfo {
+    pub mime_type: Mime,
+    pub data: Arc<Mutex<String>>
+}
+
+impl FileInfo {
+    fn new(mime_type: Mime, data: Arc<Mutex<String>>) -> FileInfo {
+        FileInfo {
+            mime_type: mime_type,
+            data: data.clone()
+        }
+    }
+
+    fn clone(&self) -> FileInfo {
+        FileInfo {
+            mime_type: self.mime_type.clone(),
+            data: self.data.clone()
+        }
+    }
+}
+
 
 
 pub struct StaticFileHandler {
@@ -10,7 +36,7 @@ pub struct StaticFileHandler {
 
 struct StaticFileHandlerInner {
     root_path: PathBuf,
-    file_cache: HashMap<PathBuf, Arc<Mutex<String>>>
+    file_cache: HashMap<PathBuf, FileInfo>
 }
 
 impl StaticFileHandler {
@@ -39,15 +65,28 @@ impl StaticFileHandler {
         self.inner.lock().unwrap().file_cache.contains_key(k)
     }
 
+    fn determine_mime(&self, k: &Path) -> Mime {
+        match k.extension().and_then(OsStr::to_str) {
+            Some("html") | Some("htm") => mime::TEXT_HTML_UTF_8,
+            Some("css") => mime::TEXT_CSS_UTF_8,
+            Some("js") => mime::TEXT_JAVASCRIPT,
+            _ => mime::TEXT_PLAIN_UTF_8,
+        }
+    }
+
     fn update(&mut self, k: PathBuf, v: String) {
-        self.inner.lock().unwrap().file_cache.entry(k).and_modify(|e| *e = Arc::new(Mutex::new(v)));
+        let mime_type = self.determine_mime(k.as_path());
+
+        self.inner.lock().unwrap().file_cache.entry(k).and_modify(|e| *e = FileInfo::new(mime_type, Arc::new(Mutex::new(v))));
     }
     
     fn insert(&mut self, k: PathBuf, v: String) {
-        self.inner.lock().unwrap().file_cache.insert(k, Arc::new(Mutex::new(v)));
+        let mime_type = self.determine_mime(k.as_path());
+
+        self.inner.lock().unwrap().file_cache.insert(k, FileInfo::new(mime_type, Arc::new(Mutex::new(v))));
     }
 
-    fn get_cached(&self, k: &Path) -> Option<Arc<Mutex<String>>> {
+    fn get_cached(&self, k: &Path) -> Option<FileInfo> {
         match self.inner.lock().unwrap().file_cache.get(k) {
             Some(v) => Some(v.clone()),
             None => None
@@ -84,7 +123,7 @@ impl StaticFileHandler {
         Ok(true)
     }
 
-    async fn get_cached_file(&mut self, input_path: &Path) -> std::io::Result<Arc<Mutex<String>>> {
+    async fn get_cached_file(&mut self, input_path: &Path) -> std::io::Result<FileInfo> {
         let mut cloned = { self.clone() };
 
         if !self.check_valid_path(input_path).await? {
@@ -104,7 +143,7 @@ impl StaticFileHandler {
         }
     }
 
-    pub async fn get_static_async(&mut self, input_path: &Path) -> std::io::Result<Arc<Mutex<String>>> {
+    pub async fn get_static_async(&mut self, input_path: &Path) -> std::io::Result<FileInfo> {
         self.get_cached_file(input_path).await
     }
 }

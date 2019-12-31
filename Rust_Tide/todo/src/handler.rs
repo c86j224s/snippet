@@ -85,7 +85,9 @@ pub async fn handle_get_static(req: Request<GlobalState>) -> Response {
 
     match sfs.get_static_async(&rel_path).await {
         Ok(v) => {
-            Response::new(StatusCode::OK.into()).body_string(v.lock().unwrap().to_owned())
+            Response::new(StatusCode::OK.into())
+                .body_string(v.data.lock().unwrap().to_owned())
+                .set_mime(v.mime_type)
         },
         Err(e) => {
             println!("get static async failed. {:#?}", e);
@@ -101,7 +103,9 @@ pub async fn handle_index(req: Request<GlobalState>) -> Response {
 
     match sfs.get_static_async(&rel_path).await {
         Ok(v) => {
-            Response::new(StatusCode::OK.into()).body_string(v.lock().unwrap().to_owned()).set_mime(mime::TEXT_HTML_UTF_8)
+            Response::new(StatusCode::OK.into())
+                .body_string(v.data.lock().unwrap().to_owned())
+                .set_mime(v.mime_type)
         },
         Err(e) => {
             println!("get index async failed. {:#?}", e);
