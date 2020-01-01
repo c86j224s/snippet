@@ -6,4 +6,4 @@ CREATE TABLE note (
   published BOOLEAN NOT NULL DEFAULT false,
   created DATETIME NOT NULL,
   updated DATETIME NOT NULL
-);
+) DEFAULT CHARSET=utf8 COLLATE utf8_general_ci;
