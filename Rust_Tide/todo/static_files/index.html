@@ -31,7 +31,6 @@
             <div id="fetched">
 
             </div>
-
         </div>
 
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -44,8 +43,9 @@
                     url: "/note",
                     method: "get"
                 }).done(function(data) {
+                    console.log('refreshing');
                     console.log(data);
-                    var txt = '';                    
+                    var txt = '';
 
                     for (var i in data['notes']) {
                         var each = data['notes'][i];
@@ -60,12 +60,27 @@
                                 <h5 class="card-title">` + title + `</h5>
                                 <p class="card-text">` + body + `</p>
                                 <small>#` + id + ` / created at ` + created + ` / updated at ` + updated + `</small>
+                                <p><a onclick="delete_note(` + id + `);">(DELETE ME)</a></p>
                             </div>
                         </div>`;
                     }
 
+                    $('#fetched').text("");
                     $('#fetched').append(txt);
                 });
+            }
+
+            function delete_note(note_id) {
+                $.ajax({
+                    url: "/note/" + note_id,
+                    method: "delete"
+                }).done(function(data) {
+                    console.log('delete note done');
+                    console.log(data);
+
+                    refresh();
+                });
+                return false;
             }
 
             $(function() {
@@ -77,15 +92,15 @@
                         dataType: 'json',
                         data: JSON.stringify({ title: $('#input_title').val(), body: $('#input_body').val() })
                     }).done(function(data) {
+                        console.log('post note done');
                         console.log(data);
 
                         refresh();
-                    })
+                    });
                     return false;
                 });
 
                 refresh();
-
             });
         </script>
     </body>

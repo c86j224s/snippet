@@ -125,7 +125,7 @@ pub async fn handle_note_create(mut req: Request<GlobalState>) -> Response {
 
     new_note.create().await;
 
-    Response::new(StatusCode::OK.into())
+    Response::new(StatusCode::OK.into()).body_string("{}".to_owned())
 }
 
 pub async fn handle_note_publish(mut req: Request<GlobalState>) -> Response {
@@ -139,7 +139,7 @@ pub async fn handle_note_publish(mut req: Request<GlobalState>) -> Response {
 
     NoteRequest{ id: id }.publish().await;
 
-    Response::new(StatusCode::OK.into())
+    Response::new(StatusCode::OK.into()).body_string("{}".to_owned())
 }
 
 pub async fn handle_note_delete(mut req: Request<GlobalState>) -> Response {
@@ -153,7 +153,7 @@ pub async fn handle_note_delete(mut req: Request<GlobalState>) -> Response {
 
     NoteRequest{ id: id }.delete().await;
 
-    Response::new(StatusCode::OK.into())
+    Response::new(StatusCode::OK.into()).body_string("{}".to_owned())
 }
 
 pub async fn handle_notes(req: Request<GlobalState>) -> Response {
