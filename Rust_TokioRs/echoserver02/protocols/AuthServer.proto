@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "Common.proto";
+
+message Packet {
+    enum Id {
+        PING = 0;
+        LOGIN = 1;
+    };
+    Id id = 1;
+    PING ping = 2;
+    LOGIN login = 3;
+}
+
+message PING {
+    uint64 now_utc = 1;
+}
+
+message LOGIN {
+    Account account = 1;
+}
+
