@@ -79,3 +79,27 @@ async fn main() -> io::Result<()> {
 }
 
 
+macro_rules! map_handler {
+    ( $received_packet: expr, $( ( $packetid: path => $handler: expr ) ),* ) => {
+        {
+            match $received_packet.id {
+                $(
+                    $packetid => tokio::spawn(async move { $handler($received_packet) }),
+                )*
+            }
+        }
+    };
+}
+
+#[tokio::test]
+async fn macrotest() {
+    let mut pkt = Packet::new();
+    pkt.set_id(Packet_Id::LOGIN);
+    map_handler!(
+        pkt,
+        ( Packet_Id::PING => |_p: Packet| { println!("ping"); } ),
+        ( Packet_Id::LOGIN => |_p: Packet| { println!("login"); } )
+    );
+
+    tokio::time::delay_for(tokio::time::Duration::from_millis(1000)).await;
+}
