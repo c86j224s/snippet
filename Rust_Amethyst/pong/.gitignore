@@ -1,0 +1,10 @@
+# Unwanted files
+target
+.git.bk
+
+# Backup files
+.DS_Store
+thumbs.db
+*~
+*.rs.bk
+*.swp
