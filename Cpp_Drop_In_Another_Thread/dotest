@@ -1,0 +1,5 @@
+#!/bin/bash
+
+g++ -std=gnu++17 -o main main.cc -lpthread
+
+./main
