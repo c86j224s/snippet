@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"cjs/atourofgo/shared/application"
 	"cjs/atourofgo/shared/network"
@@ -36,7 +38,7 @@ func main() {
 	srv := network.NewServer(app)
 
 	// todo: 다양한 주소를 지정 가능하게...
-	cli.Run(fmt.Sprintf("%s:%d", cfg.PeerClients[0].Address, cfg.PeerClients[0].Port), 2, func(c *network.ClientConn, b []byte, n int) {
+	cli.Run(fmt.Sprintf("%s:%d", cfg.PeerClients[0].Addr, cfg.PeerClients[0].Port), 2, func(c *network.ClientConn, b []byte, n int) {
 		fmt.Printf("received from client conn. %s", b[:n])
 
 		if sc := srv.GetFirstConn(); sc != nil {
@@ -58,11 +60,22 @@ func main() {
 		}
 	})
 
-	time.Sleep(30 * time.Second)
+	sigs := make(chan os.Signal, 1)
+	shutdown := make(chan bool, 1)
 
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		shutdown <- true
+	}()
+
+	<-shutdown
+	fmt.Printf("shuting down...")
 	srv.Stop()
 	cli.Stop()
 	app.Stop()
+	fmt.Printf("shutdown...")
 
 	fmt.Println("잘가, World")
 }

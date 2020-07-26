@@ -1,18 +1,18 @@
 package main
 
 import (
+	"cjs/atourofgo/shared/network"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 )
 
 type PeerService struct {
-	Port int `json:"port"`
+	network.Address
 }
 
 type PeerClient struct {
-	Address string `json:"address"`
-	Port    int    `json:"port"`
+	network.Address
 }
 
 type Config struct {
