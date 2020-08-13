@@ -3,14 +3,19 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"cjs/atourofgo/shared/application"
+	"cjs/atourofgo/shared/network"
 )
 
 func main() {
 	fmt.Println("안녕, World")
 
-	app := NewApplication()
+	app := application.NewApplication()
 
-	srv := NewServerStart(app, 8000)
+	srv := network.NewServerStart(app, 8000, func(c *network.ServerConn, b []byte, n int) {
+
+	})
 
 	time.Sleep(10 * time.Second)
 

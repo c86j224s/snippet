@@ -1,6 +1,7 @@
-package main
+package network
 
 import (
+	"cjs/atourofgo/shared/application"
 	"context"
 	"fmt"
 	"io"
@@ -11,11 +12,11 @@ type ServerConn struct {
 	conn      net.Conn
 	ctx       context.Context
 	ctxCancel context.CancelFunc
-	app       *Application
+	app       *application.Application
 	srv       *Server
 }
 
-func NewServerConn(app *Application, srv *Server, conn net.Conn) *ServerConn {
+func NewServerConn(app *application.Application, srv *Server, conn net.Conn) *ServerConn {
 	c := &ServerConn{
 		conn:      conn,
 		ctx:       nil,
@@ -26,14 +27,14 @@ func NewServerConn(app *Application, srv *Server, conn net.Conn) *ServerConn {
 	return c
 }
 
-func (c *ServerConn) Handler() {
+func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 	c.srv.conns[c.conn.LocalAddr()] = c
 
-	c.app.wg.Add(1)
+	c.app.Wg.Add(1)
 	go func() {
 		defer func() {
 			c.conn.Close()
-			c.app.wg.Done()
+			c.app.Wg.Done()
 		}()
 
 		c.ctx, c.ctxCancel = context.WithCancel(c.srv.ctx)
@@ -63,6 +64,8 @@ func (c *ServerConn) Handler() {
 				fmt.Println("n == 0")
 				return
 			}
+
+			handler(c, buf, n)
 
 			_, e = c.conn.Write(buf)
 			if e != nil {

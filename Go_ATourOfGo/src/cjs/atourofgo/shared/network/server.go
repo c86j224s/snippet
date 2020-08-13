@@ -1,6 +1,7 @@
-package main
+package network
 
 import (
+	"cjs/atourofgo/shared/application"
 	"context"
 	"fmt"
 	"net"
@@ -13,7 +14,7 @@ type Server struct {
 	ctxCancel context.CancelFunc
 }
 
-func NewServerStart(app *Application, port int) *Server {
+func NewServerStart(app *application.Application, port int, handler func(*ServerConn, []byte, int)) *Server {
 	s := &Server{}
 	s.conns = make(map[net.Addr]*ServerConn)
 
@@ -27,11 +28,11 @@ func NewServerStart(app *Application, port int) *Server {
 
 	fmt.Printf("new server listening on [%d]\n", port)
 
-	app.wg.Add(1)
+	app.Wg.Add(1)
 	go func() {
-		defer app.wg.Done()
+		defer app.Wg.Done()
 
-		s.ctx, s.ctxCancel = context.WithCancel(app.ctx)
+		s.ctx, s.ctxCancel = context.WithCancel(app.Ctx)
 
 	AcceptLoop:
 		for {
@@ -52,7 +53,7 @@ func NewServerStart(app *Application, port int) *Server {
 
 			c := NewServerConn(app, s, conn)
 
-			c.Handler()
+			c.Handler(handler)
 		}
 
 		fmt.Println("end of listener goroutine")

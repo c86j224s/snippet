@@ -1,4 +1,4 @@
-package main
+package application
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 )
 
 type Application struct {
-	ctx       context.Context
+	Ctx       context.Context
 	ctxCancel context.CancelFunc
-	wg        sync.WaitGroup
+	Wg        sync.WaitGroup
 }
 
 func NewApplication() *Application {
 	a := &Application{}
 
-	a.ctx, a.ctxCancel = context.WithCancel(context.Background())
+	a.Ctx, a.ctxCancel = context.WithCancel(context.Background())
 
 	return a
 }
@@ -23,6 +23,6 @@ func NewApplication() *Application {
 func (a *Application) Stop() {
 	fmt.Println("application stopping")
 	a.ctxCancel()
-	a.wg.Wait()
+	a.Wg.Wait()
 	fmt.Println("application stopped")
 }
