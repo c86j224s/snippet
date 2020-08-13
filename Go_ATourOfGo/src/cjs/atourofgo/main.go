@@ -14,7 +14,11 @@ func main() {
 	app := application.NewApplication()
 
 	srv := network.NewServerStart(app, 8000, func(c *network.ServerConn, b []byte, n int) {
-
+		_, e := c.Conn.Write(b)
+		if e != nil {
+			fmt.Printf("write error %s\n", e.Error())
+			return
+		}
 	})
 
 	time.Sleep(10 * time.Second)

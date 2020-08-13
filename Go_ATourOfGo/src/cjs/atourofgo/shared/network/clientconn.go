@@ -8,36 +8,34 @@ import (
 	"net"
 )
 
-type ServerConn struct {
-	Conn      net.Conn
+type ClientConn struct {
+	conn      net.Conn
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	app       *application.Application
-	srv       *Server
 }
 
-func NewServerConn(app *application.Application, srv *Server, conn net.Conn) *ServerConn {
-	c := &ServerConn{
-		Conn:      conn,
+func NewClientStart(app *application.Application, address string, handler func(*ClientConn, []byte, int)) *ClientConn {
+	c := &ClientConn{
+		conn:      nil,
 		ctx:       nil,
 		ctxCancel: nil,
 		app:       app,
-		srv:       srv,
 	}
-	return c
-}
 
-func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
-	c.srv.conns[c.Conn.LocalAddr()] = c
+	conn, e := net.Dial("tcp", address)
+	if e != nil {
+		fmt.Printf("dial error. err[%s]", e.Error())
+		return nil
+	}
 
-	c.app.Wg.Add(1)
+	c.conn = conn
+
+	app.Wg.Add(1)
 	go func() {
-		defer func() {
-			c.Conn.Close()
-			c.app.Wg.Done()
-		}()
+		defer app.Wg.Done()
 
-		c.ctx, c.ctxCancel = context.WithCancel(c.srv.ctx)
+		c.ctx, c.ctxCancel = context.WithCancel(app.Ctx)
 
 	HandlerLoop:
 		for {
@@ -48,7 +46,7 @@ func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 			}
 
 			buf := make([]byte, 1024)
-			n, e := c.Conn.Read(buf)
+			n, e := c.conn.Read(buf)
 			if e != nil {
 				if opErr, ok := e.(*net.OpError); ok && opErr.Timeout() {
 					continue
@@ -67,9 +65,8 @@ func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 			}
 
 			handler(c, buf, n)
-
 		}
-
-		fmt.Println("end of handler goroutine")
 	}()
+
+	return c
 }
