@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -20,6 +21,8 @@ func NewApplication() *Application {
 }
 
 func (a *Application) Stop() {
+	fmt.Println("application stopping")
 	a.ctxCancel()
 	a.wg.Wait()
+	fmt.Println("application stopped")
 }

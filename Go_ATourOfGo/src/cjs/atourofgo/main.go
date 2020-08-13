@@ -10,11 +10,11 @@ func main() {
 
 	app := NewApplication()
 
-	srv := NewServerStart(app.ctx, app.wg, 8000)
+	srv := NewServerStart(app, 8000)
 
 	time.Sleep(10 * time.Second)
 
-	srv.ctxCancel()
+	srv.Stop()
 	app.Stop()
 
 	fmt.Println("잘가, World")
