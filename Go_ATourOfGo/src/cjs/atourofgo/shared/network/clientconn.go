@@ -6,68 +6,96 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
-// todo : ClientConn이 아니라 Client가 되어야 하고, Reconnect + multiple connections 지원이 필요하다.
-
 type ClientConn struct {
-	Conn      net.Conn
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-	app       *application.Application
+	Conn    net.Conn
+	ctx     context.Context
+	cancel  context.CancelFunc
+	hctx    context.Context
+	hcancel context.CancelFunc
+	app     *application.Application
+	cli     *Client
 }
 
-func NewClient(app *application.Application) *ClientConn {
+func NewClientConn(app *application.Application, cli *Client) *ClientConn {
 	return &ClientConn{
 		app: app,
+		cli: cli,
 	}
 }
 
-func (c *ClientConn) Run(address string, handler func(*ClientConn, []byte, int)) bool {
-	conn, e := net.Dial("tcp", address)
-	if e != nil {
-		fmt.Printf("dial error. err[%s]", e.Error())
-		return false
-	}
-
-	c.Conn = conn
-
+func (c *ClientConn) Run(address string, handler func(*ClientConn, []byte, int)) {
 	c.app.Wg.Add(1)
 	go func() {
 		defer c.app.Wg.Done()
 
-		c.ctx, c.ctxCancel = context.WithCancel(c.app.Ctx)
+		c.ctx, c.cancel = context.WithCancel(c.app.Ctx)
 
-	HandlerLoop:
+	ConnectLoop:
 		for {
 			select {
 			case <-c.ctx.Done():
-				break HandlerLoop
+				break ConnectLoop
 			default:
 			}
 
-			buf := make([]byte, 1024)
-			n, e := c.Conn.Read(buf)
+			fmt.Printf("trying to connect to [%s]\n", address)
+
+			conn, e := net.DialTimeout("tcp", address, time.Second*10)
 			if e != nil {
-				if opErr, ok := e.(*net.OpError); ok && opErr.Timeout() {
-					continue
-				} else if e == io.EOF {
-					fmt.Println("eof")
-					return
-				} else {
-					fmt.Printf("read error %s\n", e.Error())
+				fmt.Printf("dial error. err[%s]\n", e.Error())
+				continue
+			}
+
+			c.Conn = conn
+
+			c.hctx, c.hcancel = context.WithCancel(c.ctx)
+
+			fmt.Printf("connected to [%s]. local bind [%s]\n", address, c.Conn.LocalAddr().String())
+
+		HandlerLoop:
+			for {
+				select {
+				case <-c.hctx.Done():
+					break ConnectLoop
+				default:
+				}
+
+				c.Conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+
+				buf := make([]byte, 1024)
+				n, e := c.Conn.Read(buf)
+				if e != nil {
+					if opErr, ok := e.(*net.OpError); ok && opErr.Timeout() {
+						continue
+					} else if e == io.EOF {
+						fmt.Println("eof")
+						break HandlerLoop
+					} else {
+						fmt.Printf("read error %s\n", e.Error())
+						break HandlerLoop
+					}
+				}
+
+				if n == 0 {
+					fmt.Println("n == 0")
 					return
 				}
+
+				handler(c, buf, n)
 			}
 
-			if n == 0 {
-				fmt.Println("n == 0")
-				return
-			}
-
-			handler(c, buf, n)
+			fmt.Printf("disconnected to [%s]. local bind [%s]", address, c.Conn.LocalAddr().String())
 		}
-	}()
 
-	return true
+		fmt.Printf("end of connect goroutine.\n")
+
+	}()
+}
+
+func (c *ClientConn) Stop() {
+	c.hcancel()
+	c.cancel()
 }

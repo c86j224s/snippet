@@ -28,7 +28,6 @@ func NewServerConn(app *application.Application, srv *Server, conn net.Conn) *Se
 }
 
 func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
-	c.srv.conns[c.Conn.LocalAddr()] = c
 
 	c.app.Wg.Add(1)
 	go func() {

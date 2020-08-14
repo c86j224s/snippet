@@ -5,19 +5,20 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 )
 
 type Server struct {
-	listener  net.Listener
-	conns     map[net.Addr]*ServerConn
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-	app       *application.Application
+	listener   net.Listener
+	conns      map[int32]*ServerConn
+	ctx        context.Context
+	ctxCancel  context.CancelFunc
+	app        *application.Application
 }
 
 func NewServer(app *application.Application) *Server {
 	return &Server{
-		conns: make(map[net.Addr]*ServerConn),
+		conns: make(map[int32]*ServerConn),
 		app:   app,
 	}
 }
@@ -38,6 +39,7 @@ func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
 		defer s.app.Wg.Done()
 
 		s.ctx, s.ctxCancel = context.WithCancel(s.app.Ctx)
+		sid := 0i32
 
 	AcceptLoop:
 		for {
@@ -50,13 +52,13 @@ func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
 			conn, e := s.listener.Accept()
 			if e != nil {
 				fmt.Printf("accept error. err[%s]\n", e.Error())
-				//return
-				break
+				break AcceptLoop
 			}
 
 			fmt.Printf("new conn established\n")
 
 			c := NewServerConn(s.app, s, conn)
+			s.conns[atomic.AddInt32(&sid, 1)] = c
 
 			c.Handler(handler)
 		}
@@ -77,3 +79,9 @@ func (s *Server) GetFirstConn() *ServerConn {
 	}
 	return nil
 }
+
+func (s *Server) GetConn(idx int32) *ServerConn {
+	return s.conns[idx]
+}
+
+// todo: round robin connection getter 만들기
