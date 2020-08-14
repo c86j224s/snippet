@@ -12,27 +12,32 @@ type Server struct {
 	conns     map[net.Addr]*ServerConn
 	ctx       context.Context
 	ctxCancel context.CancelFunc
+	app       *application.Application
 }
 
-func NewServerStart(app *application.Application, port int, handler func(*ServerConn, []byte, int)) *Server {
-	s := &Server{}
-	s.conns = make(map[net.Addr]*ServerConn)
+func NewServer(app *application.Application) *Server {
+	return &Server{
+		conns: make(map[net.Addr]*ServerConn),
+		app:   app,
+	}
+}
 
+func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
 	listener, e := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if e != nil {
 		fmt.Printf("listen error. err[%s]\n", e.Error())
-		return nil
+		return false
 	}
 
 	s.listener = listener
 
 	fmt.Printf("new server listening on [%d]\n", port)
 
-	app.Wg.Add(1)
+	s.app.Wg.Add(1)
 	go func() {
-		defer app.Wg.Done()
+		defer s.app.Wg.Done()
 
-		s.ctx, s.ctxCancel = context.WithCancel(app.Ctx)
+		s.ctx, s.ctxCancel = context.WithCancel(s.app.Ctx)
 
 	AcceptLoop:
 		for {
@@ -51,7 +56,7 @@ func NewServerStart(app *application.Application, port int, handler func(*Server
 
 			fmt.Printf("new conn established\n")
 
-			c := NewServerConn(app, s, conn)
+			c := NewServerConn(s.app, s, conn)
 
 			c.Handler(handler)
 		}
@@ -59,9 +64,16 @@ func NewServerStart(app *application.Application, port int, handler func(*Server
 		fmt.Println("end of listener goroutine")
 	}()
 
-	return s
+	return true
 }
 
 func (s *Server) Stop() {
 	s.listener.Close()
+}
+
+func (s *Server) GetFirstConn() *ServerConn {
+	for _, v := range s.conns {
+		return v
+	}
+	return nil
 }

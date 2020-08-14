@@ -8,34 +8,35 @@ import (
 	"net"
 )
 
+// todo : ClientConn이 아니라 Client가 되어야 하고, Reconnect + multiple connections 지원이 필요하다.
+
 type ClientConn struct {
-	conn      net.Conn
+	Conn      net.Conn
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 	app       *application.Application
 }
 
-func NewClientStart(app *application.Application, address string, handler func(*ClientConn, []byte, int)) *ClientConn {
-	c := &ClientConn{
-		conn:      nil,
-		ctx:       nil,
-		ctxCancel: nil,
-		app:       app,
+func NewClient(app *application.Application) *ClientConn {
+	return &ClientConn{
+		app: app,
 	}
+}
 
+func (c *ClientConn) Run(address string, handler func(*ClientConn, []byte, int)) bool {
 	conn, e := net.Dial("tcp", address)
 	if e != nil {
 		fmt.Printf("dial error. err[%s]", e.Error())
-		return nil
+		return false
 	}
 
-	c.conn = conn
+	c.Conn = conn
 
-	app.Wg.Add(1)
+	c.app.Wg.Add(1)
 	go func() {
-		defer app.Wg.Done()
+		defer c.app.Wg.Done()
 
-		c.ctx, c.ctxCancel = context.WithCancel(app.Ctx)
+		c.ctx, c.ctxCancel = context.WithCancel(c.app.Ctx)
 
 	HandlerLoop:
 		for {
@@ -46,7 +47,7 @@ func NewClientStart(app *application.Application, address string, handler func(*
 			}
 
 			buf := make([]byte, 1024)
-			n, e := c.conn.Read(buf)
+			n, e := c.Conn.Read(buf)
 			if e != nil {
 				if opErr, ok := e.(*net.OpError); ok && opErr.Timeout() {
 					continue
@@ -68,5 +69,5 @@ func NewClientStart(app *application.Application, address string, handler func(*
 		}
 	}()
 
-	return c
+	return true
 }

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:feat" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="95a94e61-c42d-48f9-8f9e-974740acbe26" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/src/cjs/atourofgo/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/cjs/atourofgo/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cjs/atourofgo/shared/network/clientconn.go" beforeDir="false" afterPath="$PROJECT_DIR$/src/cjs/atourofgo/shared/network/clientconn.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" path="C:\Users\c86j2\scoop\apps\go\current" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="ProjectId" id="1g5Neb3tmjXljSBjvzgHxV4j6C9" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="go.tried.to.enable.integration.dep.integrator" value="true" />
+    <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="go.vendoring.notification.had.been.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+  </component>
+  <component name="RunManager">
+    <configuration name="go build atourofgo/" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="Go_ATourOfGo" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$/src/cjs/atourofgo" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="2218" y="915" width="1092" height="716" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1597400655315">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state x="2218" y="915" width="1092" height="716" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.3840.2120@0.0.3840.2120" timestamp="1597400655315" />
+    <state width="1874" height="266" key="GridCell.Tab.0.bottom" timestamp="1597401800029">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state width="1874" height="266" key="GridCell.Tab.0.bottom/0.0.3840.2120@0.0.3840.2120" timestamp="1597401800029" />
+    <state width="1874" height="266" key="GridCell.Tab.0.center" timestamp="1597401800029">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state width="1874" height="266" key="GridCell.Tab.0.center/0.0.3840.2120@0.0.3840.2120" timestamp="1597401800029" />
+    <state width="1874" height="266" key="GridCell.Tab.0.left" timestamp="1597401800029">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state width="1874" height="266" key="GridCell.Tab.0.left/0.0.3840.2120@0.0.3840.2120" timestamp="1597401800029" />
+    <state width="1874" height="266" key="GridCell.Tab.0.right" timestamp="1597401800029">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state width="1874" height="266" key="GridCell.Tab.0.right/0.0.3840.2120@0.0.3840.2120" timestamp="1597401800029" />
+    <state x="2381" y="708" key="SettingsEditor" timestamp="1597401632614">
+      <screen x="0" y="0" width="3840" height="2120" />
+    </state>
+    <state x="2381" y="708" key="SettingsEditor/0.0.3840.2120@0.0.3840.2120" timestamp="1597401632614" />
+  </component>
+</project>
