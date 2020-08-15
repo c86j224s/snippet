@@ -9,11 +9,11 @@ import (
 )
 
 type Server struct {
-	listener   net.Listener
-	conns      map[int32]*ServerConn
-	ctx        context.Context
-	ctxCancel  context.CancelFunc
-	app        *application.Application
+	listener  net.Listener
+	conns     map[int32]*ServerConn
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	app       *application.Application
 }
 
 func NewServer(app *application.Application) *Server {
@@ -39,7 +39,7 @@ func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
 		defer s.app.Wg.Done()
 
 		s.ctx, s.ctxCancel = context.WithCancel(s.app.Ctx)
-		sid := 0i32
+		var sid int32 = 0
 
 	AcceptLoop:
 		for {

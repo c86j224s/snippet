@@ -91,11 +91,14 @@ func (c *ClientConn) Run(address string, handler func(*ClientConn, []byte, int))
 		}
 
 		fmt.Printf("end of connect goroutine.\n")
-
 	}()
 }
 
 func (c *ClientConn) Stop() {
-	c.hcancel()
-	c.cancel()
+	if c.hcancel != nil {
+		c.hcancel()
+	}
+	if c.cancel != nil {
+		c.cancel()
+	}
 }

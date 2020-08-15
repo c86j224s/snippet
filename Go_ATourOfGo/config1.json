@@ -1,0 +1,15 @@
+{
+    "peer_service": {
+        "port": 8001
+    },
+    "peer_clients": [
+        {
+            "address": "127.0.0.1",
+            "port": 8000
+        },
+        {
+            "address": "127.0.0.1",
+            "port": 8002
+        }
+    ]
+}
