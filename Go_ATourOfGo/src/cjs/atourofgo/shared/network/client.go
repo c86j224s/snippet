@@ -19,12 +19,12 @@ func NewClient(app *application.Application) *Client {
 	}
 }
 
-func (c *Client) Run(address string, count int, handler func(*ClientConn, []byte, int)) {
-	for i := 0; i < count; i++ {
+func (c *Client) Run(addrs []Address, handler func(*ClientConn, []byte, int)) {
+	for i, a := range addrs {
 		cc := NewClientConn(c.app, c)
 		c.conns[i] = cc
 
-		cc.Run(address, handler)
+		cc.Run(a.ToString(), handler)
 	}
 }
 

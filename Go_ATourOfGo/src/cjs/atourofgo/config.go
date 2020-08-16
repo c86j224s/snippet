@@ -7,17 +7,9 @@ import (
 	"io/ioutil"
 )
 
-type PeerService struct {
-	network.Address
-}
-
-type PeerClient struct {
-	network.Address
-}
-
 type Config struct {
-	PeerService PeerService  `json:"peer_service"`
-	PeerClients []PeerClient `json:"peer_clients"`
+	PeerService network.Address   `json:"peer_service"`
+	PeerClients []network.Address `json:"peer_clients"`
 }
 
 func ReadConfig(config_name string) *Config {

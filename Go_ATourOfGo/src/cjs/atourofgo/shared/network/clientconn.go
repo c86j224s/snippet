@@ -43,9 +43,10 @@ func (c *ClientConn) Run(address string, handler func(*ClientConn, []byte, int))
 
 			fmt.Printf("trying to connect to [%s]\n", address)
 
-			conn, e := net.DialTimeout("tcp", address, time.Second*10)
+			conn, e := net.DialTimeout("tcp", address, time.Second*1)
 			if e != nil {
 				fmt.Printf("dial error. err[%s]\n", e.Error())
+				time.Sleep(time.Second * 1)
 				continue
 			}
 

@@ -38,7 +38,7 @@ func main() {
 	srv := network.NewServer(app)
 
 	// todo: 다양한 주소를 지정 가능하게...
-	cli.Run(fmt.Sprintf("%s:%d", cfg.PeerClients[0].Addr, cfg.PeerClients[0].Port), 2, func(c *network.ClientConn, b []byte, n int) {
+	cli.Run(cfg.PeerClients, func(c *network.ClientConn, b []byte, n int) {
 		fmt.Printf("received from client conn. %s", b[:n])
 
 		if sc := srv.GetFirstConn(); sc != nil {
@@ -50,7 +50,7 @@ func main() {
 		}
 	})
 
-	srv.Run(cfg.PeerService.Port, func(c *network.ServerConn, b []byte, n int) {
+	srv.Run(cfg.PeerService, func(c *network.ServerConn, b []byte, n int) {
 		if cc := cli.GetFirstConn(); cc != nil {
 			_, e := cc.Conn.Write(b[:n])
 			if e != nil {

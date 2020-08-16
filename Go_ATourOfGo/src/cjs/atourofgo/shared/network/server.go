@@ -23,8 +23,8 @@ func NewServer(app *application.Application) *Server {
 	}
 }
 
-func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
-	listener, e := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func (s *Server) Run(addr Address, handler func(*ServerConn, []byte, int)) bool {
+	listener, e := net.Listen("tcp", addr.ToString())
 	if e != nil {
 		fmt.Printf("listen error. err[%s]\n", e.Error())
 		return false
@@ -32,7 +32,7 @@ func (s *Server) Run(port int, handler func(*ServerConn, []byte, int)) bool {
 
 	s.listener = listener
 
-	fmt.Printf("new server listening on [%d]\n", port)
+	fmt.Printf("new server listening on [%d]\n", addr.Port)
 
 	s.app.Wg.Add(1)
 	go func() {
