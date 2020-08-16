@@ -71,6 +71,9 @@ func (s *Server) Run(addr Address, handler func(*ServerConn, []byte, int)) bool 
 
 func (s *Server) Stop() {
 	s.listener.Close()
+	for _, c := range s.conns {
+		c.Stop()
+	}
 }
 
 func (s *Server) GetFirstConn() *ServerConn {

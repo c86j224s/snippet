@@ -72,3 +72,8 @@ func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 		fmt.Println("end of handler goroutine")
 	}()
 }
+
+func (c *ServerConn) Stop() {
+	c.ctxCancel()
+	c.Conn.Close()
+}
