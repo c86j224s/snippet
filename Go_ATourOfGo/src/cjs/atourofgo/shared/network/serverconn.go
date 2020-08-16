@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 type ServerConn struct {
@@ -46,6 +47,8 @@ func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 			default:
 			}
 
+			c.Conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+
 			buf := make([]byte, 1024)
 			n, e := c.Conn.Read(buf)
 			if e != nil {
@@ -75,5 +78,4 @@ func (c *ServerConn) Handler(handler func(*ServerConn, []byte, int)) {
 
 func (c *ServerConn) Stop() {
 	c.ctxCancel()
-	c.Conn.Close()
 }
