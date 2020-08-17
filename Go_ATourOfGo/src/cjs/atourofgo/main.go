@@ -45,8 +45,6 @@ func main() {
 
 	psrv.Run(cfg.PeerService, func(c *network.ServerConn, b []byte, n int) {
 		fmt.Printf("received from peer server conn. %s", b[:n])
-
-		pcli.Broadcast(b, n)
 	})
 
 	srv.Run(cfg.Service, func(c *network.ServerConn, b []byte, n int) {
