@@ -33,31 +33,26 @@ func main() {
 
 	app := application.NewApplication()
 
-	cli := network.NewClient(app)
-
 	srv := network.NewServer(app)
 
-	// todo: 다양한 주소를 지정 가능하게...
-	cli.Run(cfg.PeerClients, func(c *network.ClientConn, b []byte, n int) {
-		fmt.Printf("received from client conn. %s", b[:n])
+	pcli := network.NewClient(app)
 
-		if sc := srv.GetFirstConn(); sc != nil {
-			_, e := sc.Conn.Write(b[:n])
-			if e != nil {
-				fmt.Println("failed to proxy to client [%s], err[%s]\n", b[:n], e.Error())
-				return
-			}
-		}
+	psrv := network.NewServer(app)
+
+	pcli.Run(cfg.PeerClients, func(c *network.ClientConn, b []byte, n int) {
+		fmt.Printf("received from peer client conn. %s", b[:n])
 	})
 
-	srv.Run(cfg.PeerService, func(c *network.ServerConn, b []byte, n int) {
-		if cc := cli.GetFirstConn(); cc != nil {
-			_, e := cc.Conn.Write(b[:n])
-			if e != nil {
-				fmt.Printf("failed to proxy to server [%s], err[%s]\n", b[:n], e.Error())
-				return
-			}
-		}
+	psrv.Run(cfg.PeerService, func(c *network.ServerConn, b []byte, n int) {
+		fmt.Printf("received from peer server conn. %s", b[:n])
+
+		pcli.Broadcast(b, n)
+	})
+
+	srv.Run(cfg.Service, func(c *network.ServerConn, b []byte, n int) {
+		fmt.Printf("received from service server conn. [%s]", b[:n])
+
+		pcli.Broadcast(b, n)
 	})
 
 	sigs := make(chan os.Signal, 1)
@@ -72,8 +67,9 @@ func main() {
 
 	<-shutdown
 	fmt.Printf("shuting down...")
+	psrv.Stop()
+	pcli.Stop()
 	srv.Stop()
-	cli.Stop()
 	app.Stop()
 	fmt.Printf("shutdown...")
 

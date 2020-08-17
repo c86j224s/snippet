@@ -1,4 +1,8 @@
 {
+    "service": {
+        "address": "",
+        "port": 7002
+    },
     "peer_service": {
         "port": 8002
     },

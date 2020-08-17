@@ -35,6 +35,12 @@ func (c *Client) GetFirstConn() *ClientConn {
 	return nil
 }
 
+func (c *Client) Broadcast(b []byte, n int) {
+	for _, v := range c.conns {
+		v.Conn.Write(b[:n])
+	}
+}
+
 func (c *Client) Stop() {
 	for _, v := range c.conns {
 		v.Stop()

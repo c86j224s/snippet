@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Service     network.Address   `json:"service"`
 	PeerService network.Address   `json:"peer_service"`
 	PeerClients []network.Address `json:"peer_clients"`
 }
