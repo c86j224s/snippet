@@ -36,7 +36,7 @@ def index():
 
 @socketio.on('connect', namespace='/mynamespace')
 def connect():
-    emit('response', {'data': 'Connected', 'username': session['username']})
+    emit('chat_response', {'data': 'Connected', 'username': session['username']}, broadcast=True)
 
 
 @socketio.on('disconnect', namespace='/mynamespace')
@@ -45,9 +45,9 @@ def disconnect():
     print('disconnected')
 
 
-@socketio.on('request', namespace='/mynamespace')
-def request(message):
-    emit('response', {'data': message['data'], 'username': session['username']}, broadcast=True)
+@socketio.on('chat', namespace='/mynamespace')
+def chat(message):
+    emit('chat_response', {'data': message['data'], 'username': session['username']}, broadcast=True)
 
 
 if __name__ == '__main__':

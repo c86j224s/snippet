@@ -6,19 +6,130 @@
         <script type="text/javascript">
             $(document).ready(function(){
                 var socket = io.connect("http://" + document.domain + ":" + location.port + "/mynamespace");
-                socket.on("response", function(message){
-                    $('#received').append("<p>" + message.username + ": " + message.data + "</p>");
+                socket.on("chat_response", function(message){
+                    $('#chat_received').append("<p>" + message.username + ": " + message.data + "</p>");
                 });
 
-                $("form#broadcast").submit(function(event){
+                $("form#chat_broadcast").submit(function(event){
                     if ($("#input-data").val() == "") {
                         return false;
                     }
 
-                    socket.emit("request", {data: $("#input-data").val()});
+                    socket.emit("chat", {data: $("#input-data").val()});
                     $("#input-data").val("");
                     return false;
                 })
+
+                /*
+                var peer_connection = new RTCPeerConnection({
+                    "iceServers": [
+                        { "url": "stun:" + "stun.l.google.com:19302" }
+                    ]
+                });
+
+                // generic handler that sends any ice candidates to the other peer
+                peer_connection.onicecandidate = function (ice_event) {
+                    if (ice_event.candidate) {
+                        socket.emit("new_ice_candidate", {candidate: ice_event.candidate});
+                    }
+                };
+
+                // display remote video streams when they arrive using local <video> MediaElement
+                peer_connection.onaddstream = function (event) {
+                    const mediaObj = $('#remote_video');
+                    mediaObj.srcObject = event.stream;
+                    mediaObj.play();
+
+                    $('#loading_state').hide();
+                    $('#open_call_state').show();
+                };
+
+                navigator.getUserMedia({
+                    video: true,
+                    audio: true
+                }, function(stream){
+                    const mediaObj = $('#local_video');
+                    mediaObj.srcObject = stream;
+                    mediaObj.play();
+
+                    stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
+                }, function(error){
+                    console.log(error);
+                });
+
+                if (document.location.hash === "" || document.location.hash === undefined) {
+                    // create the unique token for this call 
+                    var token = Date.now()+"-"+Math.round(Math.random()*10000);
+                    var call_token = "#"+token;
+
+                    // set location.hash to the unique token for this call
+                    document.location.hash = token;
+
+                    socket.emit("caller_join", {call_token: call_token});
+
+                    document.title = "You are the Caller";
+                    $("#loading_state").innerHTML = "Ready for a call...ask your friend to visit:<br/><br/>"+document.location;
+
+                    socket.on("new_ice_candidate", function(message){
+                        peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
+                    });
+
+                    socket.on("callee_join", function(message){
+                        peer_connection.createOffer().then(function(description){
+                            return peer_connection.setLocalDescription(description);
+                        })
+                        .then(function(){
+                            socket.emit("new_description", {call_token:call_token, sdp:peer_connection.localDescription});
+                        })
+                        .catch(function(error){
+                            console.log(error);
+                        });
+                    });
+
+                    socket.on("new_description", function(message){
+                        peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
+                        .then(function(){
+                            // if type is answer, can extend this
+                        })
+                        .catch(function(error){
+                            console.log(error);
+                        });
+                    });
+                }
+                else {
+                    var call_token = document.location.hash;
+
+                    socket.emit("callee_join", {call_token: call_token});
+
+                    document.title = "You are the Callee";
+                    $("#loading_state").innerHTML = "One moment please...connecting your call...";
+
+                    socket.on("new_ice_candidate", function(message){
+                        peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
+                    });
+
+                    socket.on("new_description", function(message){
+                        peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
+                        .then(function(){
+                            if (peer_connection.remoteDescription.type == "offer") {
+                                peer_connection.createAnswer().then(function(description){
+                                    return peer_connection.setLocalDescription(description);
+                                })
+                                .then(function(){
+                                    // 
+                                    socket.emit("new_description", {call_token:call_token, sdp:peer_connection.localDescription});
+                                })
+                                .catch(function(error){
+                                    console.log(error);
+                                })
+                            }
+                        })
+                        .catch(function(error){
+                            console.log(error);
+                        });
+                    });
+                }
+                */
             });
         </script>
         <meta charset="UTF-8">
@@ -26,12 +137,21 @@
     </head>
     <body>
         <h1>Received</h1>
-        <div id="received">
+        <div id="chat_received">
         </div>
 
-        <form id="broadcast" action="#">
+        <form id="chat_broadcast" action="#">
             <input id="input-data" type="text">
             <input type="submit">
         </form>
+
+        <div id="loading_state">
+            <p>loading...</p>
+        </div>
+
+        <div id="open_call_state">
+            <video id="local_video"></video>
+            <video id="remote_video"></video>
+        </div>
     </body>
 </html>
