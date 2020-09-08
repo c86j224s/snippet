@@ -6,63 +6,68 @@
         <script type="text/javascript">
             $(document).ready(function(){
                 $('#start_btn').click(function(){
+                    console.log('start chat');
+
                     var socket = io.connect("http://" + document.domain + ":" + location.port + "/mynamespace");
+                    console.log('connecting socket.io server');
+
                     socket.on("chat_response", function(message){
+                        console.log('chat_response socket.io event');
+
                         $('#chat_received').append("<p>" + message.username + ": " + message.data + "</p>");
                     });
 
                     $("form#chat_broadcast").submit(function(event){
                         if ($("#input-data").val() == "") {
+                            console.log('no chat data, no sent');
                             return false;
                         }
 
                         socket.emit("chat", {data: $("#input-data").val()});
+                        console.log('chat sent');
+
                         $("#input-data").val("");
                         return false;
                     })
 
-                    /*
                     var peer_connection = new RTCPeerConnection({
                         "iceServers": [
                             { "url": "stun:" + "stun.l.google.com:19302" }
                         ]
                     });
+                    console.log("creating rtcpeerconnection");
 
                     // generic handler that sends any ice candidates to the other peer
                     peer_connection.onicecandidate = function (ice_event) {
+                        console.log('onicecandidate event');
+
                         if (ice_event.candidate) {
                             socket.emit("new_ice_candidate", {candidate: ice_event.candidate});
+                            console.log('sent new_ice_candidate');
                         }
                     };
 
                     // display remote video streams when they arrive using local <video> MediaElement
                     peer_connection.onaddstream = function (event) {
+                        console.log('onaddstream event');
+
                         const mediaObj = $('#remote_video');
                         mediaObj.srcObject = event.stream;
                         mediaObj.play();
-
-                        $('#loading_state').hide();
-                        $('#open_call_state').show();
                     };
-                    */
 
                     navigator.getUserMedia({
                         video: true,
                         audio: true
                     }, function(stream){
+                        console.log('getusermedia succeed');
+
                         var mediaObj = $('#local_video')[0];
                         mediaObj.srcObject = stream;
-                        //++ TODO: 삭제..
-                        $('#loading_state').hide();
-                        $('#open_call_state').show();
-                        //--
 
                         mediaObj.play();
 
-
-                        /*
                         stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                        */
                     }, function(error){
                         console.log(error);
                     });
@@ -146,8 +151,15 @@
         </script>
         <style type="text/css">
             #local_video {
-                width: 300px;
+                width: 320px;
                 height: 240px;
+                border: 1px solid darkgray;
+            }
+
+            #remote_video {
+                width: 640px;
+                height: 480px;
+                border: 1px solid darkgray;
             }
         </style>
         <meta charset="UTF-8">
@@ -170,8 +182,8 @@
         </div>
 
         <div id="open_call_state">
-            <video id="local_video" controls></video>
-            <video id="remote_video"></video>
+            <video id="local_video" controls alt="local video"></video>
+            <video id="remote_video" controls alt="remote video"></video>
         </div>
     </body>
 </html>

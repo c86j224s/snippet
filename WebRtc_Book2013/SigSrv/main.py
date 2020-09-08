@@ -12,6 +12,8 @@ from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.secret_key = "secret"
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
 socketio = SocketIO(app)
 
 
