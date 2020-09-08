@@ -17,18 +17,18 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 socketio = SocketIO(app)
 
 
-user_no = 1
+user_count = 1
 
 
 @app.before_request
 def before_request():
-    global user_no
-    if 'session' in session and 'user-id' in session:
+    global user_count
+    if 'session' in session and 'username' in session:
         pass
     else:
         session['session'] = os.urandom(24)
-        session['username'] = 'user'+str(user_no)
-        user_no += 1
+        session['username'] = 'user#'+str(session['session'])
+        user_count += 1
 
 
 @app.route('/')
@@ -43,7 +43,9 @@ def connect():
 
 @socketio.on('disconnect', namespace='/mynamespace')
 def disconnect():
+    global user_count
     session.clear()
+    user_count -= 1
     print('disconnected')
 
 

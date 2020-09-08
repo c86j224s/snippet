@@ -5,7 +5,7 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
         <script type="text/javascript">
             $(document).ready(function(){
-                $('#start_btn').click(function(){
+                var start_fn = (is_caller, call_token) => { 
                     console.log('start chat');
 
                     var socket = io.connect("http://" + document.domain + ":" + location.port + "/mynamespace");
@@ -32,7 +32,7 @@
 
                     var peer_connection = new RTCPeerConnection({
                         "iceServers": [
-                            { "url": "stun:" + "stun.l.google.com:19302" }
+                            { "urls": "stun:stun.l.google.com:19302" }
                         ]
                     });
                     console.log("creating rtcpeerconnection");
@@ -146,7 +146,15 @@
                         });
                     }
                     */
+                };
+
+                $("call_btn").onclick(function(){
+                    start_fn(true, $("call_token").val());
                 });
+
+                $("join_btn").onclick(function(){
+                    start_fn(false, $("call_token").val());
+                })
             });
         </script>
         <style type="text/css">
@@ -166,7 +174,9 @@
         <title>socket io title</title>
     </head>
     <body>
-        <input type="button" id="start_btn" value="start"></input>
+        <input type="text" id="call_token"></input>
+        <input type="button" id="call_btn" value="call"></input>
+        <input type="button" id="join_btn" value="join"></input>
 
         <h1>Received</h1>
         <div id="chat_received">
