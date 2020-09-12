@@ -12,187 +12,200 @@
                 }
 
                 var start_fn = (is_caller) => { 
-                    console.log('start chat');
+                    console.log('starting');
 
-                    var socket = io.connect("http://" + document.domain + ":" + location.port + "/mynamespace");
-                    console.log('connecting socket.io server');
+                    //var ws = new WebSocket('ws://' + document.domain  + ':' + location.port + '/rtc');
+                    var ws = new WebSocket('wss://' + document.domain  + ':' + location.port + '/rtc');
+                    console.log('connecting websockets');
 
-                    socket.on("chat_response", function(message){
-                        console.log('chat_response socket.io event');
+                    ws.onclose = () => {
+                        console.log('websocket onclose');
+                    }
 
-                        $('#chat_received').append("<p>" + message.username + ": " + message.data + "</p>");
-                    });
+                    ws.onopen = event => {
+                        console.log('websocket onopen');
+                        ws.send(JSON.stringify({
+                            id: 'new'
+                        }));
 
-                    $("form#chat_broadcast").submit(function(event){
-                        if ($("#input-data").val() == "") {
-                            console.log('no chat data, no sent');
-                            return false;
+                        var peer_connection = new RTCPeerConnection({
+                            "iceServers": [
+                                { "urls": "stun:stun.l.google.com:19302" }
+                            ]
+                        });
+                        console.log("creating rtcpeerconnection");
+
+                        // generic handler that sends any ice candidates to the other peer
+                        peer_connection.onicecandidate = function (ice_event) {
+                            console.log('onicecandidate event');
+
+                            if (ice_event.candidate) {
+                                ws.send(JSON.stringify({
+                                    id: 'new_ice_candidate', 
+                                    candidate: ice_event.candidate
+                                }));
+                                console.log('sent new_ice_candidate');
+                            }
+                        };
+
+                        // display remote video streams when they arrive using local <video> MediaElement
+                        peer_connection.onaddstream = function (event) {
+                            console.log('onaddstream event');
+
+                            const mediaObj = $('#remote_video');
+                            mediaObj.srcObject = event.stream;
+                            mediaObj[0].play();
+                        };
+
+                        // caller만... 테스트를 위해..
+                        if (is_caller) {
+                            var gum = null;
+                            if (navigator.getUserMedia) {
+                                console.log('gum : navigator.getUserMedia')
+                                gum = (c, s, e) => navigator.getUserMedia(c, s, e);
+                            }
+                            else if (navigator.webkitGetUserMedia) {
+                                console.log('gum : navigator.webkitGetUserMedia')
+                                gum = (c, s, e) => navigator.webkitGetUserMedia(c, s, e);
+                            }
+                            else if (navigator.mozGetUserMedia) {
+                                console.log('gum : navigator.mozGetUserMedia')
+                                gum = (c, s, e) => navigator.mozGetUserMedia(c, s, e);
+                            }
+                            else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                                console.log('gum : navigator.mediaDevices.getUserMedia')
+                                gum = (c, s, e) => navigator.mediaDevices.getUserMedia(c, s, e);
+                            }
+                            else {
+                                console.log('gum : null')
+                                gum = null;
+                            }
+                            gum({
+                                video: true,
+                                audio: true
+                            }, stream => {
+                                console.log('getusermedia succeed');
+
+                                var mediaObj = $('#local_video')[0];
+                                mediaObj.srcObject = stream;
+
+                                mediaObj.play();
+
+                                stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
+                            }, err => {
+                                console.log('getusermedia error');
+                                console.log(err);
+                            });
                         }
 
-                        socket.emit("chat", {data: $("#input-data").val()});
-                        console.log('chat sent');
+                        if (is_caller) {
+                            ws.onmessage = event => {
+                                var msg = JSON.parse(event.data);
 
-                        $("#input-data").val("");
-                        return false;
-                    })
+                                switch (msg.id) {
+                                    case 'new_ice_candidate':
+                                        console.log('caller: on new_ice_candidate socket.io handler');
+                                        peer_connection.addIceCandidate(new RTCIceCandidate(msg.candidate));
+                                        break;
 
-                    var peer_connection = new RTCPeerConnection({
-                        "iceServers": [
-                            { "urls": "stun:stun.l.google.com:19302" }
-                        ]
-                    });
-                    console.log("creating rtcpeerconnection");
+                                    case 'callee_join':
+                                        console.log('caller: on callee_join socket.io handler');
 
-                    // generic handler that sends any ice candidates to the other peer
-                    peer_connection.onicecandidate = function (ice_event) {
-                        console.log('onicecandidate event');
+                                        peer_connection.createOffer()
+                                        .then(description => {
+                                            console.log ('caller: created offer completed');
+                                            return peer_connection.setLocalDescription(description);
+                                        })
+                                        .then(() => {
+                                            ws.send(JSON.stringify({
+                                                id: 'new_description', 
+                                                call_token: get_call_token(), 
+                                                sdp:peer_connection.localDescription
+                                            }));
+                                            console.log('caller: sent new description');
+                                        })
+                                        .catch(error => {
+                                            console.log('create offer error : ' + error);
+                                        });
 
-                        if (ice_event.candidate) {
-                            socket.emit("new_ice_candidate", {candidate: ice_event.candidate});
-                            console.log('sent new_ice_candidate');
-                        }
-                    };
+                                        console.log('caller: created offer');
+                                        break;
 
-                    // display remote video streams when they arrive using local <video> MediaElement
-                    peer_connection.onaddstream = function (event) {
-                        console.log('onaddstream event');
+                                    case 'new_description':
+                                        console.log('caller: on new_description socket.io handler');
+                                        peer_connection.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+                                        .then(() => {
+                                            console.log('caller: setRemoteDescription completed');
+                                        })
+                                        .catch(error => {
+                                            console.log('caller: setRemoteDescription error: ' + error);
+                                        });
+                                        break;
+                                }
+                            };
 
-                        const mediaObj = $('#remote_video');
-                        mediaObj.srcObject = event.stream;
-                        mediaObj[0].play();
-                    };
+                            ws.send(JSON.stringify({
+                                id: "caller_join", 
+                                call_token: get_call_token()
+                            }));
+                            console.log('sent caller_join');
 
-                    // caller만... 테스트를 위해..
-                    if (is_caller) {
-                        var gum = null;
-                        if (navigator.getUserMedia) {
-                            console.log('gum : navigator.getUserMedia')
-                            gum = (c, s, e) => navigator.getUserMedia(c, s, e);
-                        }
-                        else if (navigator.webkitGetUserMedia) {
-                            console.log('gum : navigator.webkitGetUserMedia')
-                            gum = (c, s, e) => navigator.webkitGetUserMedia(c, s, e);
-                        }
-                        else if (navigator.mozGetUserMedia) {
-                            console.log('gum : navigator.mozGetUserMedia')
-                            gum = (c, s, e) => navigator.mozGetUserMedia(c, s, e);
-                        }
-                        else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                            console.log('gum : navigator.mediaDevices.getUserMedia')
-                            gum = (c, s, e) => navigator.mediaDevices.getUserMedia(c, s, e);
+                            $('loading_state').val("ready to call.. ask your friend to visit.");
                         }
                         else {
-                            console.log('gum : null')
-                            gum = null;
-                        }
-                        gum({
-                            video: true,
-                            audio: true
-                        }, stream => {
-                            console.log('getusermedia succeed');
+                            ws.onmessage = event => {
+                                var msg = JSON.parse(event.data);
 
-                            var mediaObj = $('#local_video')[0];
-                            mediaObj.srcObject = stream;
+                                switch (msg.id) {
+                                    case 'new_ice_candidate':
+                                        console.log('callee: on new_ice_candidate socket.io handler');
+                                        peer_connection.addIceCandidate(new RTCIceCandidate(msg.candidate));
+                                        break;
 
-                            mediaObj.play();
+                                    case 'new_description':
+                                        console.log('callee: on new_description socket.io handler');
+                                        peer_connection.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+                                        .then(() => {
+                                            console.log('callee: setRemoteDescription completed');
 
-                            stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                        }, err => {
-                            console.log('getusermedia error');
-                            console.log(err);
-                        });
-                    }
+                                            if (peer_connection.remoteDescription.type != 'offer') {
+                                                console.log('callee: remoteDescription type is not offer. error.');
+                                                return;
+                                            }
 
-                    if (is_caller) {
-                        // caller
-                        socket.emit("caller_join", {call_token: get_call_token()});
-                        console.log('sent caller_join');
-
-                        $('loading_state').val("ready to call.. ask your friend to visit.");
-
-                        socket.on("new_ice_candidate", message => {
-                            console.log('caller: on new_ice_candidate socket.io handler');
-                            peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
-                        })
-                        console.log('caller: registered new_ice_candidate socket.io handler');
-
-                        socket.on("callee_join", message => {
-                            console.log('caller: on callee_join socket.io handler');
-
-                            peer_connection.createOffer()
-                            .then(description => {
-                                console.log ('caller: created offer completed');
-                                return peer_connection.setLocalDescription(description);
-                            })
-                            .then(() => {
-                                socket.emit('new_description', {call_token: get_call_token(), sdp:peer_connection.localDescription});
-                                console.log('caller: sent new description');
-                            })
-                            .catch(error => {
-                                console.log('create offer error : ' + error);
-                            });
-
-                            console.log('caller: created offer');
-                        });
-                        console.log('caller: registered callee_join socket.io handler');
-
-                        socket.on('new_description', message => {
-                            console.log('caller: on new_description socket.io handler');
-                            peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
-                            .then(() => {
-                                console.log('caller: setRemoteDescription completed');
-                            })
-                            .catch(error => {
-                                console.log('caller: setRemoteDescription error: ' + error);
-                            });
-                        });
-                        console.log('caller: registered new_description socket.io handler');
-                    }
-                    else {
-                        // callee
-                        socket.emit("callee_join", {call_token: get_call_token()});
-                        console.log('callee: sent callee_join');
-
-                        $('loading_state').val("One moment please... connecting your call...");
-
-                        socket.on('new_ice_candidate', message => {
-                            console.log('callee: on new_ice_candidate socket.io handler');
-
-                            peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
-                        })
-                        console.log('callee: registered new_ice_candidate socket.io handler');
-
-                        // TODO: socketio new_description here.
-                        socket.on('new_description', message => {
-                            console.log('callee: on new_description socket.io handler');
-                            peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
-                            .then(() => {
-                                console.log('callee: setRemoteDescription completed');
-
-                                if (peer_connection.remoteDescription.type != 'offer') {
-                                    console.log('callee: remoteDescription type is not offer. error.');
-                                    return;
+                                            peer_connection.createAnswer()
+                                            .then(description => {
+                                                console.log ('callee: created answer completed');
+                                                return peer_connection.setLocalDescription(description);
+                                            })
+                                            .then(() => {
+                                                ws.send(JSON.stringify({
+                                                    id: 'new_description', 
+                                                    call_token: get_call_token(), 
+                                                    sdp:peer_connection.localDescription
+                                                }));
+                                                console.log('callee: sent new_description');
+                                            })
+                                            .catch(error => {
+                                                console.log('callee: create answer error : ' + error);
+                                            })
+                                        })
+                                        .catch(error => {
+                                            console.log('callee: setRemoteDescription error: ' + error);
+                                        });
+                                        break;
                                 }
+                            };
 
-                                peer_connection.createAnswer()
-                                .then(description => {
-                                    console.log ('callee: created answer completed');
-                                    return peer_connection.setLocalDescription(description);
-                                })
-                                .then(() => {
-                                    socket.emit('new_description', {call_token: get_call_token(), sdp:peer_connection.localDescription});
-                                    console.log('callee: sent new_description');
-                                })
-                                .catch(error => {
-                                    console.log('callee: create answer error : ' + error);
-                                })
-                            })
-                            .catch(error => {
-                                console.log('callee: setRemoteDescription error: ' + error);
-                            })
-                        });
-                        console.log('callee: registered new_description socket.io handler');
-                    }
+                            ws.send(JSON.stringify({
+                                id: "callee_join", 
+                                call_token: get_call_token()
+                            }));
+                            console.log('callee: sent callee_join');
+
+                            $('loading_state').val("One moment please... connecting your call...");
+                        }
+                    };
                 };
 
                 $("#call_btn").click(function(){
@@ -226,15 +239,6 @@
         <input type="text" id="call_token"></input>
         <input type="button" id="call_btn" value="call"></input>
         <input type="button" id="join_btn" value="join"></input>
-
-        <h1>Received</h1>
-        <div id="chat_received">
-        </div>
-
-        <form id="chat_broadcast" action="#">
-            <input id="input-data" type="text">
-            <input type="submit">
-        </form>
 
         <div id="loading_state">
             <p>loading...</p>
