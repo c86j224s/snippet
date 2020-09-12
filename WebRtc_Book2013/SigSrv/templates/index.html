@@ -62,26 +62,46 @@
                         mediaObj[0].play();
                     };
 
-                    navigator.getUserMedia = 
-                        navigator.getUserMedia ||
-                        navigator.webkitGetUserMedia ||
-                        navigator.mozGetUserMedia;
-                    navigator.getUserMedia({
-                        video: true,
-                        audio: true
-                    }, stream => {
-                        console.log('getusermedia succeed');
+                    // caller만... 테스트를 위해..
+                    if (is_caller) {
+                        var gum = null;
+                        if (navigator.getUserMedia) {
+                            console.log('gum : navigator.getUserMedia')
+                            gum = (c, s, e) => navigator.getUserMedia(c, s, e);
+                        }
+                        else if (navigator.webkitGetUserMedia) {
+                            console.log('gum : navigator.webkitGetUserMedia')
+                            gum = (c, s, e) => navigator.webkitGetUserMedia(c, s, e);
+                        }
+                        else if (navigator.mozGetUserMedia) {
+                            console.log('gum : navigator.mozGetUserMedia')
+                            gum = (c, s, e) => navigator.mozGetUserMedia(c, s, e);
+                        }
+                        else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                            console.log('gum : navigator.mediaDevices.getUserMedia')
+                            gum = (c, s, e) => navigator.mediaDevices.getUserMedia(c, s, e);
+                        }
+                        else {
+                            console.log('gum : null')
+                            gum = null;
+                        }
+                        gum({
+                            video: true,
+                            audio: true
+                        }, stream => {
+                            console.log('getusermedia succeed');
 
-                        var mediaObj = $('#local_video')[0];
-                        mediaObj.srcObject = stream;
+                            var mediaObj = $('#local_video')[0];
+                            mediaObj.srcObject = stream;
 
-                        mediaObj.play();
+                            mediaObj.play();
 
-                        stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                    }, err => {
-                        console.log('getusermedia error');
-                        console.log(err);
-                    });
+                            stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
+                        }, err => {
+                            console.log('getusermedia error');
+                            console.log(err);
+                        });
+                    }
 
                     if (is_caller) {
                         // caller

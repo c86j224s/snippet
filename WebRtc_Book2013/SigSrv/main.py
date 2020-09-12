@@ -7,6 +7,8 @@
 
 from base64 import b64encode
 import os
+import ssl
+
 from flask import Flask, render_template, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
@@ -106,3 +108,6 @@ def new_description(message):
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0')
+    #ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    #ssl_context.load_cert_chain(certfile='temp_pub.pem', keyfile='temp_prv.pem', password='')
+    #socketio.run(app, host='0.0.0.0', ssl_context=ssl_context)
