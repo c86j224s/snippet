@@ -56,10 +56,11 @@
                         mediaObj.play();
                     };
 
+                    // TODO: new api : navigator.mediaDevices.getUserMedia
                     navigator.getUserMedia({
                         video: true,
                         audio: true
-                    }, function(stream){
+                    }, stream => {
                         console.log('getusermedia succeed');
 
                         var mediaObj = $('#local_video')[0];
@@ -68,20 +69,34 @@
                         mediaObj.play();
 
                         stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                    }, function(error){
-                        console.log(error);
+                    }, err => {
+                        console.log('getusermedia error');
+                        console.log(err);
                     });
+
+                    if (is_caller) {
+                        // caller
+                        socket.emit("caller_join", {call_token: call_token});
+
+
+                    }
+                    else {
+                        // callee
+                        socket.emit("callee_join", {call_token: call_token});
+
+
+                    }
 
                     /*
                     if (document.location.hash === "" || document.location.hash === undefined) {
-                        // create the unique token for this call 
-                        var token = Date.now()+"-"+Math.round(Math.random()*10000);
-                        var call_token = "#"+token;
+                            // create the unique token for this call 
+                            var token = Date.now()+"-"+Math.round(Math.random()*10000);
+                            var call_token = "#"+token;
 
-                        // set location.hash to the unique token for this call
-                        document.location.hash = token;
+                            // set location.hash to the unique token for this call
+                            document.location.hash = token;
 
-                        socket.emit("caller_join", {call_token: call_token});
+                            socket.emit("caller_join", {call_token: call_token});
 
                         document.title = "You are the Caller";
                         $("#loading_state").innerHTML = "Ready for a call...ask your friend to visit:<br/><br/>"+document.location;
@@ -113,12 +128,12 @@
                         });
                     }
                     else {
-                        var call_token = document.location.hash;
+                            var call_token = document.location.hash;
 
-                        socket.emit("callee_join", {call_token: call_token});
+                            socket.emit("callee_join", {call_token: call_token});
 
-                        document.title = "You are the Callee";
-                        $("#loading_state").innerHTML = "One moment please...connecting your call...";
+                            document.title = "You are the Callee";
+                            $("#loading_state").innerHTML = "One moment please...connecting your call...";
 
                         socket.on("new_ice_candidate", function(message){
                             peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
@@ -148,11 +163,13 @@
                     */
                 };
 
-                $("call_btn").onclick(function(){
+                $("#call_btn").click(function(){
+                    console.log('call_btn clicked');
                     start_fn(true, $("call_token").val());
                 });
 
-                $("join_btn").onclick(function(){
+                $("#join_btn").click(function(){
+                    console.log('call_btn clicked');
                     start_fn(false, $("call_token").val());
                 })
             });
