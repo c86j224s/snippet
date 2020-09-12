@@ -8,7 +8,7 @@
 from base64 import b64encode
 import os
 from flask import Flask, render_template, session
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 
 app = Flask(__name__)
@@ -45,6 +45,8 @@ def connect():
 @socketio.on('disconnect', namespace='/mynamespace')
 def disconnect():
     global user_count
+    if 'call_token' in session:
+        leave_room(session['call_token'])
     session.clear()
     user_count -= 1
     print('disconnected')
@@ -55,29 +57,51 @@ def chat(message):
     emit('chat_response', {'data': message['data'], 'username': session['username']}, broadcast=True)
 
 
-@socketio.on('caller_join', namspace='/mynamespace')
+@socketio.on('caller_join', namespace='/mynamespace')
 def caller_join(message):
-    if not 'caller_token' in message:
-        print('error!!!')
+    if 'call_token' not in message:
+        print(f'[caller_join] call_token not found error!!! {message}')
         emit('caller_join', {})
         return
 
-    session['caller_token'] = message['caller_token']
+    session['call_token'] = message['call_token']
+    join_room(session['call_token'])
     # 보내면 안되지만 일단 그냥 보냄 --;;
-    emit('caller_join', {'caller_token': session['caller_token'], 'username': session['username']}, broadcast=True)
+    #emit('caller_join', {'call_token': session['call_token'], 'username': session['username']}, broadcast=True)
+    emit('caller_join', {'call_token': session['call_token'], 'username': session['username']}, room=session['call_token'])
 
 
 @socketio.on('callee_join', namespace='/mynamespace')
 def callee_join(message):
-    if not 'caller_token' in message:
-        print('error!!!')
+    if 'call_token' not in message:
+        print(f'[callee_join] call_token not found error!!! {message}')
         emit('callee_join', {})
         return
 
-    session['caller_token'] = message['caller_token']
+    session['call_token'] = message['call_token']
+    join_room(session['call_token'])
     # 보내면 안되지만 일단 그냥 보냄 --;;
-    emit('callee_join', {'caller_token': session['caller_token'], 'username': session['username']}, broadcast=True)
+    #emit('callee_join', {'call_token': session['call_token'], 'username': session['username']}, broadcast=True)
+    emit('callee_join', {'call_token': session['call_token'], 'username': session['username']}, room=session['call_token'])
 
+
+def relay_handler(event, message, room):
+    if 'call_token' not in message:
+        print(f'[{event}] call_token not found error!!! {message}')
+        emit(event, {})
+        return
+
+    emit(event, message, room=room)
+
+
+@socketio.on('new_ice_candidate', namespace='/mynamespace')
+def new_ice_candidate(message):
+    relay_handler('new_ice_candidate', message, session['call_token'])
+
+
+@socketio.on('new_description', namespace='/mynamespace')
+def new_description(message):
+    relay_handler('new_description', message, session['call_token'])
 
 
 if __name__ == '__main__':

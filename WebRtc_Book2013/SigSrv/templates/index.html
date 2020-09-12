@@ -5,7 +5,13 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
         <script type="text/javascript">
             $(document).ready(function(){
-                var start_fn = (is_caller, call_token) => { 
+                function get_call_token() {
+                    var call_token = $('#call_token').val();
+                    console.log('current call_token: ' + call_token);
+                    return call_token;
+                }
+
+                var start_fn = (is_caller) => { 
                     console.log('start chat');
 
                     var socket = io.connect("http://" + document.domain + ":" + location.port + "/mynamespace");
@@ -53,124 +59,130 @@
 
                         const mediaObj = $('#remote_video');
                         mediaObj.srcObject = event.stream;
-                        mediaObj.play();
+                        mediaObj[0].play();
                     };
 
                     // TODO: new api : navigator.mediaDevices.getUserMedia
-                    navigator.getUserMedia({
-                        video: true,
-                        audio: true
-                    }, stream => {
-                        console.log('getusermedia succeed');
+                    // 테스트를 위해 joiner는 media input을 켜지 않는다.
+                    if (is_caller) {
+                        navigator.getUserMedia({
+                            video: true,
+                            audio: true
+                        }, stream => {
+                            console.log('getusermedia succeed');
 
-                        var mediaObj = $('#local_video')[0];
-                        mediaObj.srcObject = stream;
+                            var mediaObj = $('#local_video')[0];
+                            mediaObj.srcObject = stream;
 
-                        mediaObj.play();
+                            mediaObj.play();
 
-                        stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                    }, err => {
-                        console.log('getusermedia error');
-                        console.log(err);
-                    });
+                            stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
+                        }, err => {
+                            console.log('getusermedia error');
+                            console.log(err);
+                        });
+                    }
 
                     if (is_caller) {
                         // caller
-                        socket.emit("caller_join", {call_token: call_token});
+                        socket.emit("caller_join", {call_token: get_call_token()});
+                        console.log('sent caller_join');
 
+                        $('loading_state').val("ready to call.. ask your friend to visit.");
 
+                        socket.on("new_ice_candidate", message => {
+                            console.log('caller: on new_ice_candidate socket.io handler');
+                            peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
+                        })
+                        console.log('caller: registered new_ice_candidate socket.io handler');
+
+                        socket.on("callee_join", message => {
+                            console.log('caller: on callee_join socket.io handler');
+
+                            peer_connection.createOffer()
+                            .then(description => {
+                                console.log ('caller: created offer completed');
+                                return peer_connection.setLocalDescription(description);
+                            })
+                            .then(() => {
+                                socket.emit('new_description', {call_token: get_call_token(), sdp:peer_connection.localDescription});
+                                console.log('caller: sent new description');
+                            })
+                            .catch(error => {
+                                console.log('create offer error : ' + error);
+                            });
+
+                            console.log('caller: created offer');
+                        });
+                        console.log('caller: registered callee_join socket.io handler');
+
+                        socket.on('new_description', message => {
+                            console.log('caller: on new_description socket.io handler');
+                            peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
+                            .then(() => {
+                                console.log('caller: setRemoteDescription completed');
+                            })
+                            .catch(error => {
+                                console.log('caller: setRemoteDescription error: ' + error);
+                            });
+                        });
+                        console.log('caller: registered new_description socket.io handler');
                     }
                     else {
                         // callee
-                        socket.emit("callee_join", {call_token: call_token});
+                        socket.emit("callee_join", {call_token: get_call_token()});
+                        console.log('callee: sent callee_join');
 
+                        $('loading_state').val("One moment please... connecting your call...");
 
-                    }
+                        socket.on('new_ice_candidate', message => {
+                            console.log('callee: on new_ice_candidate socket.io handler');
 
-                    /*
-                    if (document.location.hash === "" || document.location.hash === undefined) {
-                            // create the unique token for this call 
-                            var token = Date.now()+"-"+Math.round(Math.random()*10000);
-                            var call_token = "#"+token;
-
-                            // set location.hash to the unique token for this call
-                            document.location.hash = token;
-
-                            socket.emit("caller_join", {call_token: call_token});
-
-                        document.title = "You are the Caller";
-                        $("#loading_state").innerHTML = "Ready for a call...ask your friend to visit:<br/><br/>"+document.location;
-
-                        socket.on("new_ice_candidate", function(message){
                             peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
-                        });
+                        })
+                        console.log('callee: registered new_ice_candidate socket.io handler');
 
-                        socket.on("callee_join", function(message){
-                            peer_connection.createOffer().then(function(description){
-                                return peer_connection.setLocalDescription(description);
-                            })
-                            .then(function(){
-                                socket.emit("new_description", {call_token:call_token, sdp:peer_connection.localDescription});
-                            })
-                            .catch(function(error){
-                                console.log(error);
-                            });
-                        });
-
-                        socket.on("new_description", function(message){
+                        // TODO: socketio new_description here.
+                        socket.on('new_description', message => {
+                            console.log('callee: on new_description socket.io handler');
                             peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
-                            .then(function(){
-                                // if type is answer, can extend this
-                            })
-                            .catch(function(error){
-                                console.log(error);
-                            });
-                        });
-                    }
-                    else {
-                            var call_token = document.location.hash;
+                            .then(() => {
+                                console.log('callee: setRemoteDescription completed');
 
-                            socket.emit("callee_join", {call_token: call_token});
-
-                            document.title = "You are the Callee";
-                            $("#loading_state").innerHTML = "One moment please...connecting your call...";
-
-                        socket.on("new_ice_candidate", function(message){
-                            peer_connection.addIceCandidate(new RTCIceCandidate(message.candidate));
-                        });
-
-                        socket.on("new_description", function(message){
-                            peer_connection.setRemoteDescription(new RTCSessionDescription(message.sdp))
-                            .then(function(){
-                                if (peer_connection.remoteDescription.type == "offer") {
-                                    peer_connection.createAnswer().then(function(description){
-                                        return peer_connection.setLocalDescription(description);
-                                    })
-                                    .then(function(){
-                                        // 
-                                        socket.emit("new_description", {call_token:call_token, sdp:peer_connection.localDescription});
-                                    })
-                                    .catch(function(error){
-                                        console.log(error);
-                                    })
+                                if (peer_connection.remoteDescription.type != 'offer') {
+                                    console.log('callee: remoteDescription type is not offer. error.');
+                                    return;
                                 }
+
+                                peer_connection.createAnswer()
+                                .then(description => {
+                                    console.log ('callee: created answer completed');
+                                    return peer_connection.setLocalDescription(description);
+                                })
+                                .then(() => {
+                                    socket.emit('new_description', {call_token: get_call_token(), sdp:peer_connection.localDescription});
+                                    console.log('callee: sent new_description');
+                                })
+                                .catch(error => {
+                                    console.log('callee: create answer error : ' + error);
+                                })
                             })
-                            .catch(function(error){
-                                console.log(error);
-                            });
+                            .catch(error => {
+                                console.log('callee: setRemoteDescription error: ' + error);
+                            })
                         });
+                        console.log('callee: registered new_description socket.io handler');
                     }
-                    */
                 };
 
                 $("#call_btn").click(function(){
                     console.log('call_btn clicked');
-                    start_fn(true, $("call_token").val());
+                    start_fn(true);
                 });
 
                 $("#join_btn").click(function(){
                     console.log('call_btn clicked');
-                    start_fn(false, $("call_token").val());
+                    start_fn(false);
                 })
             });
         </script>
