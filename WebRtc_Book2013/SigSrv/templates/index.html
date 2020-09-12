@@ -62,26 +62,26 @@
                         mediaObj[0].play();
                     };
 
-                    // TODO: new api : navigator.mediaDevices.getUserMedia
-                    // 테스트를 위해 joiner는 media input을 켜지 않는다.
-                    if (is_caller) {
-                        navigator.getUserMedia({
-                            video: true,
-                            audio: true
-                        }, stream => {
-                            console.log('getusermedia succeed');
+                    navigator.getUserMedia = 
+                        navigator.getUserMedia ||
+                        navigator.webkitGetUserMedia ||
+                        navigator.mozGetUserMedia;
+                    navigator.getUserMedia({
+                        video: true,
+                        audio: true
+                    }, stream => {
+                        console.log('getusermedia succeed');
 
-                            var mediaObj = $('#local_video')[0];
-                            mediaObj.srcObject = stream;
+                        var mediaObj = $('#local_video')[0];
+                        mediaObj.srcObject = stream;
 
-                            mediaObj.play();
+                        mediaObj.play();
 
-                            stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
-                        }, err => {
-                            console.log('getusermedia error');
-                            console.log(err);
-                        });
-                    }
+                        stream.getTracks().forEach(track => { peer_connection.addTrack(track, stream); });
+                    }, err => {
+                        console.log('getusermedia error');
+                        console.log(err);
+                    });
 
                     if (is_caller) {
                         // caller
