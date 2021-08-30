@@ -1,0 +1,13 @@
+*.idb
+*.pdb
+*.log
+*.tlog
+*.obj
+*.lastbuildstate
+*.suo
+*.db
+*.ipch
+*.exe
+*.ilk
+
+
