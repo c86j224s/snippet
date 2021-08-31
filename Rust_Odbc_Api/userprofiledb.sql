@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [UserProfileDb]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  Database [UserProfileDb]    Script Date: 2021-08-31 오후 8:54:54 ******/
 CREATE DATABASE [UserProfileDb]
  CONTAINMENT = NONE
  ON  PRIMARY 
@@ -82,7 +82,7 @@ ALTER DATABASE [UserProfileDb] SET QUERY_STORE = OFF
 GO
 USE [UserProfileDb]
 GO
-/****** Object:  Table [dbo].[UserCountries]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  Table [dbo].[UserCountries]    Script Date: 2021-08-31 오후 8:54:54 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -97,15 +97,52 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[UserProfiles]    Script Date: 2021-08-31 오후 8:54:54 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UserProfiles](
+	[Id] [uniqueidentifier] NOT NULL,
+	[GenderCode] [tinyint] NOT NULL,
+	[RealName] [nvarchar](64) NOT NULL,
+	[PhoneNumber] [varchar](32) NOT NULL,
+	[PrivacyAgreed] [bit] NOT NULL,
+	[Registered] [datetimeoffset](3) NOT NULL,
+	[Modified] [datetimeoffset](3) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_UserCountries_CountryCode]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  Index [IX_UserCountries_CountryCode]    Script Date: 2021-08-31 오후 8:54:54 ******/
 CREATE NONCLUSTERED INDEX [IX_UserCountries_CountryCode] ON [dbo].[UserCountries]
 (
 	[CountryCode] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 GO
-/****** Object:  StoredProcedure [dbo].[p_GetUserCountryByCountryCode]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  StoredProcedure [dbo].[p_GetCountriesAndProfilesById]    Script Date: 2021-08-31 오후 8:54:54 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[p_GetCountriesAndProfilesById]
+	@id uniqueidentifier
+as
+begin
+	set nocount on
+
+	select Id, CountryCode, Registered from dbo.UserCountries (nolock) where Id = @id
+
+	select Id, GenderCode, RealName, PhoneNumber, PrivacyAgreed, Registered, Modified from dbo.UserProfiles (nolock) where id = @id
+	
+	return 0
+end
+GO
+/****** Object:  StoredProcedure [dbo].[p_GetUserCountryByCountryCode]    Script Date: 2021-08-31 오후 8:54:54 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -121,7 +158,7 @@ begin
 	return 0
 end
 GO
-/****** Object:  StoredProcedure [dbo].[p_GetUserCountryById]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  StoredProcedure [dbo].[p_GetUserCountryById]    Script Date: 2021-08-31 오후 8:54:54 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -137,7 +174,7 @@ begin
 	return 0
 end
 GO
-/****** Object:  StoredProcedure [dbo].[p_InsertUserCountry]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  StoredProcedure [dbo].[p_InsertUserCountry]    Script Date: 2021-08-31 오후 8:54:54 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -159,7 +196,7 @@ begin
 
 end
 GO
-/****** Object:  StoredProcedure [dbo].[p_UpsertUserCountry]    Script Date: 2021-08-31 오후 8:36:15 ******/
+/****** Object:  StoredProcedure [dbo].[p_UpsertUserCountry]    Script Date: 2021-08-31 오후 8:54:54 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -190,3 +227,4 @@ USE [master]
 GO
 ALTER DATABASE [UserProfileDb] SET  READ_WRITE 
 GO
+
