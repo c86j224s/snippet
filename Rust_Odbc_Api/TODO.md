@@ -1,6 +1,6 @@
 # TODOS
 
-- UserProfiles 테이블 만들어서 커밋하기.
+- WVarChar 파라미터 지원.. 만들어야 할 듯??
 - protocol 좀더 간결하게 만들 수 없을까?
 - req 받아서, odbc로 실행하기
     - params

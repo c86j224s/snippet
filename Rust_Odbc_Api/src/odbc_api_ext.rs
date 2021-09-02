@@ -19,13 +19,15 @@ use odbc_api::{ColumnDescription, Connection, U16String, handles::{ParameterDesc
 )]
 extern "system" {
     pub fn SQLNumParams(statement_handles: HStmt, parameter_count_ptr: *mut SmallInt) -> SqlReturn;
+    pub fn SQLMoreResults(statement_handles: HStmt) -> SqlReturn;
 }
 
-pub trait SQLParamDescriber {
+pub trait StatementFunctions {
     fn num_params(&self) -> Result<i16, odbc_api::Error>;
+    fn more_results(&self) -> Result<bool, odbc_api::Error>;
 }
 
-impl<T> SQLParamDescriber for T where T: Statement {
+impl<T> StatementFunctions for T where T: Statement {
     fn num_params(&self) -> Result<i16, odbc_api::Error> {
         let mut num_params = 0i16;
         let sql_ret = unsafe { SQLNumParams(self.as_sys(), &mut num_params) };
@@ -41,6 +43,29 @@ impl<T> SQLParamDescriber for T where T: Statement {
             r => panic!("Unexpected odbc function result: {:?}", r),
         }
         Ok(num_params)
+    }
+
+    fn more_results(&self) -> Result<bool, odbc_api::Error> {
+        let sql_ret = unsafe { SQLMoreResults(self.as_sys()) };
+        match sql_ret {
+            SqlReturn::SUCCESS => Ok(true),
+            SqlReturn::SUCCESS_WITH_INFO => {
+                println!("success with info");
+                Ok(true)
+            },
+            SqlReturn::PARAM_DATA_AVAILABLE => {
+                println!("param_data_available");
+                Ok(true)
+            },
+            SqlReturn::NO_DATA => Ok(false),
+            SqlReturn::ERROR => {
+                /*
+                log_diagnosis..
+                */
+                Err(odbc_api::Error::NoDiagnostics)
+            },
+            r => panic!("Unexpected odbc function result: {:?}", r),
+        }
     }
 }
 

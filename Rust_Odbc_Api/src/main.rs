@@ -4,11 +4,12 @@ mod config;
 mod protocol;
 
 use config::Config;
+use odbc_api::{DataType, InputParameter, IntoParameter, RowSetBuffer, handles::{CData, CDataMut, HasDataType, Statement}, parameter::{VarChar, VarCharBox}, sys::{ParamType, SqlDataType}};
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[allow(unused)] use odbc_api_ext::{SQLParamDescriber, ConnectionExt, StatementExt};
+#[allow(unused)] use odbc_api_ext::{StatementFunctions, ConnectionExt, StatementExt};
 use odbc_connector::OdbcConnector;
 
 use crate::protocol::Stmt;
@@ -19,6 +20,7 @@ enum Error {
     Io(std::io::Error),
     Odbc(odbc_api::Error),
     StdParseInt(std::num::ParseIntError),
+    Logic(String),
 }
 
 impl std::error::Error for Error {}
@@ -29,6 +31,7 @@ impl std::fmt::Display for Error {
             Self::Io(e) => write!(f, "io error [{}]", e),
             Self::Odbc(e) => write!(f, "odbc error [{}]", e),
             Self::StdParseInt(e) => write!(f, "parse int error [{}]", e),
+            Self::Logic(description) => write!(f, "logic error [{}]", description),
         }
     }
 }
@@ -51,6 +54,13 @@ impl From<std::num::ParseIntError> for Error {
     }
 }
 
+impl Error {
+    fn logic(description: &str) -> Self {
+        Self::Logic(description.to_owned())
+    }
+}
+
+
 
 
 async fn handle_request(odbc: Arc<OdbcConnector>, request: protocol::Request) -> Result<(), Error> {
@@ -72,14 +82,75 @@ async fn handle_request(odbc: Arc<OdbcConnector>, request: protocol::Request) ->
 
     let params = stmt.params()?;
 
-    //let mut id = VarChar::from_string("b0db954a-464f-48b6-b623-1ef5cd5e185a".to_owned()); // incorrect. uniqueidentifier != varchar
-    //unsafe { statement.bind_parameter(1, ParamType::Input, &mut id) }; // how to know param type ? 
+    if params.len() != request.params.len() {
+        return Err(Error::logic("no matched params count"))
+    }
 
-    let result_cols = stmt.result_cols()?;
+    for (idx, par) in params.into_iter().enumerate() {
+        let databox: Box<dyn InputParameter> = match request.params[idx] {
+            protocol::Param::S(ref s) => Box::new(VarChar::from_string(s.to_owned())),
+            protocol::Param::NS(ref ns) => {
+                //should support nvarchar
+                Box::new(VarChar::from_string(ns.to_owned()))
+            },
+            protocol::Param::I(ref i) => { 
+                let n: i32 = i.to_owned() as i32;
+                Box::new(n.into_parameter())
+            },
+        };
 
-    let result = stmt.execute_now()?;
+        unsafe { stmt.bind_input_parameter(idx as u16 + 1, &databox) };
+    }
 
-    println!("execute result : {}", result);
+    //let mut id = VarChar::from_string("3BDDC9BD-FAAE-42C0-BD28-5DB3EAA8D6E4".to_owned()); // incorrect. uniqueidentifier != varchar
+    //unsafe { stmt.bind_parameter(1, ParamType::Input, &mut id)? }; // how to know param type ? 
+
+    stmt.execute_now()?;
+
+    loop {
+        let result_cols = stmt.result_cols()?;
+        if result_cols.len() == 0 {
+            return Err(Error::logic("result_cols len == 0"))
+        }
+
+        while unsafe { stmt.fetch()? } {
+            println!("fetch one");
+            for (idx, col_desc) in result_cols.iter().enumerate() {
+                let dt = match col_desc.data_type {
+                    odbc_api::DataType::WVarchar { length } => "nvarchar",
+                    odbc_api::DataType::Varchar { length } => "varchar", 
+                    odbc_api::DataType::Other { data_type, .. } if data_type == odbc_api::sys::SqlDataType::EXT_GUID => {
+                        "varchar"
+                    },
+                    odbc_api::DataType::Bit |
+                    odbc_api::DataType::TinyInt |
+                    odbc_api::DataType::SmallInt | 
+                    odbc_api::DataType::Integer |
+                    odbc_api::DataType::BigInt => "integer",
+                    odbc_api::DataType::Other { data_type, .. } if data_type == odbc_api::sys::SqlDataType(-155) => {
+                        "varchar?"
+                    },
+                    _ => panic!("fdsa")
+                };
+
+                println!("dt : {}", dt);
+
+                if dt == "varchar" {
+                    //stmt.bind_col(column_number, target)
+                }
+                //if col_desc.data_type == odbc_api::DataType::
+                //col_dec.data_type
+
+                //stmt.get_data(idx + 1, )
+
+
+            }
+        }
+
+        if !stmt.more_results()? {
+            break
+        }
+    }
 
     Ok(())
 }
@@ -98,16 +169,20 @@ async fn main() -> Result<(), Error> {
         "stmt": {
             "type": "query",
             "val_ue_not_used": "SELECT TOP 1 Id, CountryCode, Registered FROM UserProfileDb.dbo.UserCountries WHERE Id = ?",
-            "value": "SELECT TOP 1 * FROM UserProfileDb.dbo.UserProfiles WHERE Id = ?"
+            "value_ok": "SELECT TOP 1 * FROM UserProfileDb.dbo.UserProfiles WHERE Id = ? AND GenderCode = ?",
+            "value_ok": "SELECT TOP 1 * FROM UserProfileDb.dbo.UserProfiles WHERE 'hello' = ?",
+            "value": "SELECT TOP 1 * FROM UserProfileDb.dbo.UserProfiles WHERE Id = ? AND GenderCode = ? AND RealName = ?"
         },
         "params": [
-            { "S": "random guid" }
+            { "S": "3BDDC9BD-FAAE-42C0-BD28-5DB3EAA8D6E4" },
+            { "I": 1 },
+            { "NS": "홍길동" }
         ]
     }"###;
  
     let req = protocol::parse_json_request(req1)?;
 
-    handle_request(odbc, req).await?;
+    handle_request(Arc::clone(&odbc), req).await?;
 
 
     println!("Hello, world!");
