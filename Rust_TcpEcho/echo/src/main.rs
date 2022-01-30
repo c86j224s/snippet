@@ -2,6 +2,7 @@ use std::net::{TcpListener};
 use std::io::{BufReader, BufWriter, BufRead, Write};
 use std::thread;
 
+fn main() {
     let listener = match TcpListener::bind("127.0.0.1:8888") {
         Ok(v) => { println!("127.0.0.1:8888 binded."); v },
         Err(e) => { panic!("bind failed : {:?}", e) }
@@ -22,16 +23,19 @@ use std::thread;
             let mut line = String::new();
             loop {
                 match reader.read_line(&mut line) {
-                    Ok(_) => { 
+                    Ok(_len) if _len > 0 => { 
                         println!("[{:?}] {}", 
                                 client.peer_addr().unwrap(), 
                                 line.trim());
                     },
+                    Ok(_) => {
+                        break
+                    }
                     Err(e) => {
                         println!("[LOG][ERROR] read error! {:?}", e);
-                        break;
+                        break
                     }
-                };
+                }
 
                 write!(writer, "{}", line);
                 match writer.flush() {
