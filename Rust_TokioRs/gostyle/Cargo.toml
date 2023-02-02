@@ -19,3 +19,7 @@ thiserror = "1.0"
 
 # [build-dependencies]
 # protoc-rust = "2"
+
+[[bin]]
+name = "echoserver"
+path = "src/bin/echoserver/main.rs"
