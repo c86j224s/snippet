@@ -1,14 +1,21 @@
-use tokio::{sync::mpsc::{UnboundedSender, unbounded_channel}, task::{JoinHandle, self}, net::TcpStream, io::{BufReader, AsyncBufReadExt}, select};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter},
+    net::TcpStream,
+    select,
+    sync::mpsc::{unbounded_channel, UnboundedSender},
+    task::{self, JoinHandle},
+};
+use tracing::{error, info};
 
 use crate::server::ListenerMessage;
-
 
 pub enum SocketTaskMessage {
     Send(String),
 }
 
+#[derive(Debug)]
 pub struct ServerConnection {
-    pub tx: UnboundedSender<SocketTaskMessage>,
+    pub tx: Option<UnboundedSender<SocketTaskMessage>>,
     pub t: JoinHandle<()>,
 }
 
@@ -24,25 +31,28 @@ impl ServerConnection {
             let (rd, wr) = socket.split();
 
             let mut reader = BufReader::new(rd);
-            let mut line = String::new();
+            let mut writer = BufWriter::new(wr);
 
             'the_loop: loop {
+                let mut line = String::new();
+
                 select! {
                     r = reader.read_line(&mut line) => {
                         match r {
                             Ok(n) if n == 0 => {
-                                // eof
-                                // TODO
+                                info!("[socket({})] eof.", socket_id);
+                                break 'the_loop
                             }
-                            Ok(n) => {
-                                // TODO 
+                            Ok(_) => {
                                 println!("read line : {}", &line);
+
+                                if let Err(e) = writer.write(line.as_bytes()).await {
+                                    error!("[socket({})] failed to send to socket, message[{}], err[{}]", socket_id, line, e);
+                                    break 'the_loop
+                                }
                             }
                             Err(e) => {
-                                println!("[socket({})] error, err[{}]", socket_id, e);
-                                if let Err(e) = listener_tx.send(ListenerMessage::Remove(socket_id)) {
-                                    println!("[socket({})] failed to send remove socket request, err[{}]", socket_id, e);
-                                }
+                                error!("[socket({})] failed to read, err[{}]", socket_id, e);
                                 break 'the_loop
                             }
                         }
@@ -51,24 +61,28 @@ impl ServerConnection {
                     r = rx.recv() => {
                         match r {
                             Some(SocketTaskMessage::Send(s)) => {
-
+                                if let Err(e) = writer.write(s.as_bytes()).await {
+                                    error!("[socket({})] failed to responed to socket, message[{}], err[{}]", socket_id, s, e);
+                                    break 'the_loop
+                                }
                             }
                             None => {
-                                println!("[socket({})] channel closed", socket_id);
-                                if let Err(e) = listener_tx.send(ListenerMessage::Remove(socket_id)) {
-                                    println!("[socket[{}] failed to send remove socket request, err[{}]", socket_id, e);
-                                }
+                                info!("[socket({})] channel closed", socket_id);
                                 break 'the_loop
                             }
                         }
                     }
                 }
             }
+
+            if let Err(e) = listener_tx.send(ListenerMessage::Remove(socket_id)) {
+                error!(
+                    "[socket[{}] failed to send remove socket request, err[{}]",
+                    socket_id, e
+                );
+            }
         });
 
-        Self {
-            tx,
-            t,
-        }
+        Self { tx: Some(tx), t }
     }
 }
