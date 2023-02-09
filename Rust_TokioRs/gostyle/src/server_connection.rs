@@ -28,10 +28,9 @@ impl ServerConnection {
         let (tx, mut rx) = unbounded_channel::<SocketTaskMessage>();
 
         let t = task::spawn(async move {
-            let (rd, wr) = socket.split();
+            let (rd, mut wr) = socket.split();
 
             let mut reader = BufReader::new(rd);
-            let mut writer = BufWriter::new(wr);
 
             'the_loop: loop {
                 let mut line = String::new();
@@ -44,9 +43,9 @@ impl ServerConnection {
                                 break 'the_loop
                             }
                             Ok(_) => {
-                                println!("read line : {}", &line);
+                                info!("[socket({})] read line : {}", socket_id, &line);
 
-                                if let Err(e) = writer.write(line.as_bytes()).await {
+                                if let Err(e) = wr.write(line.as_bytes()).await {
                                     error!("[socket({})] failed to send to socket, message[{}], err[{}]", socket_id, line, e);
                                     break 'the_loop
                                 }
@@ -61,7 +60,7 @@ impl ServerConnection {
                     r = rx.recv() => {
                         match r {
                             Some(SocketTaskMessage::Send(s)) => {
-                                if let Err(e) = writer.write(s.as_bytes()).await {
+                                if let Err(e) = wr.write(s.as_bytes()).await {
                                     error!("[socket({})] failed to responed to socket, message[{}], err[{}]", socket_id, s, e);
                                     break 'the_loop
                                 }

@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Hello, world on 6605 port!");
 
-    let srv = Server::start(SocketAddr::from_str("127.0.0.1:6605")?)?;
+    let srv = Server::start(SocketAddr::from_str("0.0.0.0:6605")?)?;
 
     time::sleep(Duration::from_secs(30)).await;
 
