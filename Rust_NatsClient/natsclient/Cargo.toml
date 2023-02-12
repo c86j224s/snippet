@@ -1,0 +1,10 @@
+[package]
+name = "natsclient"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { version = "1.0.69", features = ["backtrace", "std"] }
+nats = "0.23.1"
