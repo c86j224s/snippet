@@ -11,30 +11,28 @@ struct Generator {
     struct promise_type {
         T  now_value;
         std::suspend_always initial_suspend() noexcept {
-            std::cout << std::format("Initial suspend called. {}", now_value) << std::endl;
+            std::println("Initial suspend called. {}", now_value);
             return {};
         }
         std::suspend_always final_suspend() noexcept {
-            std::cout << std::format("Final suspend called. {}", now_value) << std::endl;
+            std::println("Final suspend called. {}", now_value);
             return {};
         }
         Generator get_return_object() {
-            std::cout << std::format("Get return object called. {}", now_value) << std::endl;
-
+            std::println("Get return object called. {}", now_value);
             return Generator{ std::coroutine_handle<promise_type>::from_promise(*this) };
         }
         void unhandled_exception() {
-            std::cerr << "Unhandled exception in coroutine." << std::endl;
+            std::println("Unhandled exception in coroutine.");
             throw;
         }
         std::suspend_always yield_value(T value) noexcept {
-            std::cout << std::format("Yield value called. {}", value) << std::endl;
-
+            std::println("Yield value called. {}", value);
             now_value = value;
             return {};
         }
         void return_void() noexcept {
-            std::cout << std::format("Return void called. {}", now_value) << std::endl;;
+            std::println("Return void called. {}", now_value);
         }
     };
 
@@ -42,11 +40,10 @@ struct Generator {
     handle_type coro_handle;
 
     Generator(handle_type h) : coro_handle(h) {
-        std::cout << std::format("Generator created with handle: {}", coro_handle.address()) << std::endl;
+        std::println("Generator created with handle: {}", coro_handle.address());
     }
     ~Generator() {
-        std::cout << std::format("Generator destroyed with handle: {}", coro_handle.address()) << std::endl;
-
+        std::println("Generator destroyed with handle: {}", coro_handle.address());
         if (coro_handle) {
             coro_handle.destroy();
         }
@@ -54,20 +51,15 @@ struct Generator {
 
     std::optional<T> next() {
         if (!coro_handle || coro_handle.done()) {
-            std::cout << "on next, Coroutine is done or not initialized." << std::endl;
-
+            std::println("on next, Coroutine is done or not initialized.");
             return std::nullopt;
         }
-
         coro_handle.resume();
         if (coro_handle.done()) {
-            std::cout << "on next, Coroutine is done after resume." << std::endl;
-
+            std::println("on next, Coroutine is done after resume.");
             return std::nullopt;
         }
-
-        std::cout << "on next, Coroutine resumed successfully." << std::endl;
-
+        std::println("on next, Coroutine resumed successfully.");
         return coro_handle.promise().now_value;
     }
 };
@@ -81,11 +73,9 @@ Generator<int> generate_numbers(int start, int end) {
 
 void test_generator() {
     std::println("========== test_generator");
-
     auto gen = generate_numbers(0, 10);
     while (auto value = gen.next()) {
-        std::cout << *value << std::endl;
+        std::println("{}", *value);
     }
-
     std::println("==========");
 }
