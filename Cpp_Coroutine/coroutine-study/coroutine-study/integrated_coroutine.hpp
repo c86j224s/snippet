@@ -229,6 +229,8 @@ void test_integrated_coroutine() {
     //    std::println("[Main] 받은 결과: {}", result);
     //    std::println("[Main] 다음 결과 대기...\n");
     //}
+    //
+    //std::this_thread::sleep_for(std::chrono::seconds(3));  // 마지막 결과 출력 대기
 
     // === 2. 코루틴 체이닝 예제 === (아직 크래시 남)
     std::println("\n--- 코루틴 체이닝 ---");
