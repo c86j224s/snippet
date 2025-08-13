@@ -5,7 +5,13 @@
 #include <format>
 #include <print>
 
+// 코루틴 타입 또는 코루틴 객체
+// - 사용자가 정의하는 클래스
+// - 코루틴을 감싸고 제어하는 래퍼 역할
 struct SimpleCoroutine {
+    // 약속 타입 혹은 약속 객체
+    // - 코루틴의 동작 정책을 정의하는 중첩 클래스
+    // - 컴파일러가 코루틴 변환 시 사용하는 인터페이스
     struct promise_type {
         SimpleCoroutine get_return_object() {
             std::println("Creating coroutine return object.");
@@ -34,6 +40,13 @@ struct SimpleCoroutine {
         }
     };
 
+    // 코루틴 핸들
+    // - 실제 코루틴의 상태와 실행을 제어하는 저수준 객체
+    // - promise_type을 통해 코루틴의 상태를 관리
+    // - 코루틴이 생성될 때 promise_type의 인스턴스를 생성하고, 이를 통해 코루틴을 제어
+    // - 코루틴이 완료되면 핸들을 통해 상태를 확인하고, 필요시 파괴
+    // - 코루틴 핸들은 코루틴의 실행 상태를 나타내며, resume(), destroy() 등의 메서드를 제공
+    // - 메모리의 코루틴 프레임을 가리키는 포인터 역할
     using handle_type = std::coroutine_handle<promise_type>;
     handle_type coro_handle;
 
@@ -63,6 +76,7 @@ struct SimpleCoroutine {
     }
 };
 
+// 코루틴 함수
 SimpleCoroutine my_coroutine() {
     std::println("[Coroutine] 코루틴 함수 시작");
     std::println("[Coroutine] 첫 번째 작업 수행");

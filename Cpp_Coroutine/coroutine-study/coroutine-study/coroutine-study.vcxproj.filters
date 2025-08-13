@@ -29,5 +29,14 @@
     <ClInclude Include="basic_coroutine.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="frame_inspection.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="custom_awaiter.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="integrated_coroutine.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

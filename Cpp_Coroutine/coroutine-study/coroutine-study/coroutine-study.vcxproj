@@ -128,7 +128,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basic_coroutine.hpp" />
+    <ClInclude Include="custom_awaiter.hpp" />
+    <ClInclude Include="frame_inspection.hpp" />
     <ClInclude Include="generator.hpp" />
+    <ClInclude Include="integrated_coroutine.hpp" />
     <ClInclude Include="thread1.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
