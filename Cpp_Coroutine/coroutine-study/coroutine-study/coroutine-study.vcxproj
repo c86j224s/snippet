@@ -127,6 +127,7 @@
     <ClCompile Include="coroutine-study.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="async_server_chain.hpp" />
     <ClInclude Include="basic_coroutine.hpp" />
     <ClInclude Include="custom_awaiter.hpp" />
     <ClInclude Include="frame_inspection.hpp" />

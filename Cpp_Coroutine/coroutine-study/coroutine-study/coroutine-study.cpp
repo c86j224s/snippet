@@ -5,6 +5,7 @@
 #include "frame_inspection.hpp"
 #include "custom_awaiter.hpp"
 #include "integrated_coroutine.hpp"
+#include "async_server_chain.hpp"
 
 int main(int argc, char** argv) {
     std::cout << "Hello, World!" << std::endl;
@@ -14,7 +15,8 @@ int main(int argc, char** argv) {
     //test_basic_coroutine();
     //test_frame_inspection();
     //test_custom_awaiter();
-    test_integrated_coroutine();
+    //test_integrated_coroutine();
+    async_server_chain::test();
 
     return 0;
 }

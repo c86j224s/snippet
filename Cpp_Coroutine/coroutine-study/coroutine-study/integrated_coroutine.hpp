@@ -100,6 +100,8 @@ struct AsyncGenerator {
 
         iterator& operator++() {
             std::println("[Iterator] 다음 값 요청");
+            
+            coro_handle.promise().current_value.reset();  // 현재 값 초기화
 
             coro_handle.resume();  // 코루틴 재개하여 다음 값 생성
 
@@ -202,17 +204,30 @@ AsyncGenerator<std::string> number_processor() {
     // === 코루틴 안에서 다른 코루틴 사용 ===
     auto num_gen = number_generator();
 
+    //std::println("[NumberProcessor] 숫자 생성 코루틴 호출");
+
     for (auto it = num_gen.begin(); !it.is_done(); ++it) {
+
+        //std::println("[NumberProcessor] 숫자 생성 완료, 값: {}", *it);
+
         int number = *it;
+
+        //std::println("[NumberProcessor] 숫자 처리 중: {}", number);
 
         // === co_await: 처리 시간 시뮬레이션 ===
         std::string processed = co_await AsyncLoader<std::string>{
             "Processed_" + std::to_string(number), 80
         };
 
+        //std::println("[NumberProcessor] 숫자 처리 완료: {}", processed);
+
         // === co_yield: 처리 결과 반환 ===
         co_yield processed;
+
+        //std::println("[NumberProcessor] 다음 숫자 처리 대기 중...\n");
     }
+
+    //std::println("[NumberProcessor] 모든 숫자 처리 완료");
 
     co_return;
 }
@@ -221,18 +236,18 @@ void test_integrated_coroutine() {
     std::println("=== 통합 코루틴 예제 ===");
 
     // === 1. 기본 통합 예제 ===
-    //std::println("\n--- 데이터 처리 코루틴 ---");
-    //auto processor = data_processor();
-    //
-    //for (auto it = processor.begin(); !it.is_done(); ++it) {
-    //    std::string result = *it;
-    //    std::println("[Main] 받은 결과: {}", result);
-    //    std::println("[Main] 다음 결과 대기...\n");
-    //}
-    //
-    //std::this_thread::sleep_for(std::chrono::seconds(3));  // 마지막 결과 출력 대기
+    std::println("\n--- 데이터 처리 코루틴 ---");
+    auto processor = data_processor();
+    
+    for (auto it = processor.begin(); !it.is_done(); ++it) {
+        std::string result = *it;
+        std::println("[Main] 받은 결과: {}", result);
+        std::println("[Main] 다음 결과 대기...\n");
+    }
+    
+    std::this_thread::sleep_for(std::chrono::seconds(3));  // 마지막 결과 출력 대기
 
-    // === 2. 코루틴 체이닝 예제 === (아직 크래시 남)
+    // === 2. 코루틴 체이닝 예제 ===
     std::println("\n--- 코루틴 체이닝 ---");
     auto chained_processor = number_processor();
     
