@@ -176,7 +176,6 @@ namespace async_server_chain {
         }
     };
 
-    // TODO: 체이닝 어떻게 하지?
     // TODO: 동시에 여러개 join?
 
     template<typename T>
@@ -190,14 +189,13 @@ namespace async_server_chain {
                 return Task{ std::coroutine_handle<promise_type>::from_promise(*this) };
             }
             std::suspend_never initial_suspend() noexcept { return {}; }
-            std::suspend_always final_suspend() noexcept { 
+            std::suspend_always final_suspend() noexcept { return {}; }
+            void return_value(T value){
+                result_ = std::move(value);
+
                 if (handle_) {
                     handle_.resume();
                 }
-                return {};
-            }
-            void return_value(T value) {
-                result_ = std::move(value);
             }
             void unhandled_exception() {
                 exception_ = std::current_exception();
@@ -257,13 +255,12 @@ namespace async_server_chain {
                 return Task{ std::coroutine_handle<promise_type>::from_promise(*this) };
             }
             std::suspend_never initial_suspend() noexcept { return {}; }
-            std::suspend_always final_suspend() noexcept { 
+            std::suspend_always final_suspend() noexcept { return {}; }
+            void return_void() {
                 if (handle_) {
                     handle_.resume();
                 }
-                return {};
             }
-            void return_void() {}
             void unhandled_exception() {
                 exception_ = std::current_exception();
             }
