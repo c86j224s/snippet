@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <atomic>
 #include <coroutine>
@@ -51,29 +51,29 @@ namespace async_server_chain {
         void process_requests() {
             while (true) {
 
-                // ¿äÃ»ÀÌ µé¾î¿Ã ¶§±îÁö ´ë±â
+                // ìš”ì²­ì´ ë“¤ì–´ì˜¬ ë•Œê¹Œì§€ ëŒ€ê¸°
                 Req req;
                 while (true) {
                     {
                         std::shared_lock lock(mutex_);
 
                         if (request_queue_.empty()) {
-                            // ¿äÃ»ÀÌ ¾øÀ¸¸é Àá½Ã ´ë±â
+                            // ìš”ì²­ì´ ì—†ìœ¼ë©´ ì ì‹œ ëŒ€ê¸°
                             std::this_thread::yield();
                             continue;
                         }
                     }
 
-                    // ¿äÃ»ÀÌ ¿ÔÀ¸¹Ç·Î °¡Á®¿À±â
+                    // ìš”ì²­ì´ ì™”ìœ¼ë¯€ë¡œ ê°€ì ¸ì˜¤ê¸°
                     std::unique_lock lock(mutex_);
                     req = request_queue_.front();
                     request_queue_.pop();
                     break;
                 }
 
-                std::println("[SampleServer] ¿äÃ» Ã³¸®: {}", req.command);
+                std::println("[SampleServer] ìš”ì²­ ì²˜ë¦¬: {}", req.command);
 
-                // ÀÀ´ä »ı¼º (½Ã¹Ä·¹ÀÌ¼Ç)
+                // ì‘ë‹µ ìƒì„± (ì‹œë®¬ë ˆì´ì…˜)
                 Res res{ req.tid, true, "Response to " + req.command };
 
                 std::unique_lock lock(mutex_);
@@ -83,28 +83,28 @@ namespace async_server_chain {
 
     public:
         void run() {
-            // ¿äÃ» Ã³¸® ½º·¹µå ½ÃÀÛ
+            // ìš”ì²­ ì²˜ë¦¬ ìŠ¤ë ˆë“œ ì‹œì‘
             std::thread([this]() {
-                std::println("[SampleServer] ¼­¹ö ½ÃÀÛ");
+                std::println("[SampleServer] ì„œë²„ ì‹œì‘");
 
                 process_requests();
 
-                std::println("[SampleServer] ¼­¹ö Á¾·á");
+                std::println("[SampleServer] ì„œë²„ ì¢…ë£Œ");
             }).detach();
         }
 
-        // ¿äÃ» ¹ß½Å
+        // ìš”ì²­ ë°œì‹ 
         void add_request(const Req& req) {
             {
                 std::unique_lock lock(mutex_);
                 request_queue_.push(req);
             }
 
-            std::println("[SampleServer] ¿äÃ» Ãß°¡: tid={}, command={}, body={}", 
+            std::println("[SampleServer] ìš”ì²­ ì¶”ê°€: tid={}, command={}, body={}", 
                 req.tid, req.command, req.body);
         }
 
-        // ÀÀ´ä ¼ö½Å
+        // ì‘ë‹µ ìˆ˜ì‹ 
         Res get_response() {
             Res res;
 
@@ -124,7 +124,7 @@ namespace async_server_chain {
                 break;
             }
 
-            std::println("[SampleServer] ÀÀ´ä ¹İÈ¯: tid={}, success={}, body={}", 
+            std::println("[SampleServer] ì‘ë‹µ ë°˜í™˜: tid={}, success={}, body={}", 
                 res.tid, res.success, res.body);
             return res;
         }
@@ -136,7 +136,7 @@ namespace async_server_chain {
         std::optional<T> result_;
         Awaiter() : handle_(nullptr) {}
         bool await_ready() const noexcept {
-            return false; // Ç×»ó ´ë±â »óÅÂ
+            return false; // í•­ìƒ ëŒ€ê¸° ìƒíƒœ
         }
         void await_suspend(std::coroutine_handle<> handle) const {
             const_cast<Awaiter*>(this)->handle_ = handle;
@@ -161,7 +161,7 @@ namespace async_server_chain {
 
         Awaiter() : handle_(nullptr) {}
         bool await_ready() const noexcept {
-            return false; // Ç×»ó ´ë±â »óÅÂ
+            return false; // í•­ìƒ ëŒ€ê¸° ìƒíƒœ
         }
         void await_suspend(std::coroutine_handle<> handle) const {
             const_cast<Awaiter*>(this)->handle_ = handle;
@@ -176,8 +176,8 @@ namespace async_server_chain {
         }
     };
 
-    // TODO: Ã¼ÀÌ´× ¾î¶»°Ô ÇÏÁö?
-    // TODO: µ¿½Ã¿¡ ¿©·¯°³ join?
+    // TODO: ì²´ì´ë‹ ì–´ë–»ê²Œ í•˜ì§€?
+    // TODO: ë™ì‹œì— ì—¬ëŸ¬ê°œ join?
 
     template<typename T>
     struct Task {
@@ -207,6 +207,26 @@ namespace async_server_chain {
         std::coroutine_handle<promise_type> handle_;
         Task(std::coroutine_handle<promise_type> h) : handle_(h) {}
         ~Task() { if (handle_) handle_.destroy(); }
+
+        // ë³µì‚¬ ê¸ˆì§€
+        Task(const Task&) = delete;
+        Task& operator=(const Task&) = delete;
+
+        // ì´ë™ ìƒì„±ì
+        Task(Task&& other) noexcept : handle_(other.handle_) {
+            other.handle_ = nullptr;
+        }
+
+        // ì´ë™ í• ë‹¹ ì—°ì‚°ì
+        Task& operator=(Task&& other) noexcept {
+            if (this != &other) {
+                if (handle_) handle_.destroy();
+                handle_ = other.handle_;
+                other.handle_ = nullptr;
+            }
+            return *this;
+        }
+
         T get() {
             if (handle_.promise().exception_) {
                 std::rethrow_exception(handle_.promise().exception_);
@@ -253,6 +273,25 @@ namespace async_server_chain {
 
         Task(std::coroutine_handle<promise_type> h) : handle_(h) {}
         ~Task() { if (handle_) handle_.destroy(); }
+
+        // ë³µì‚¬ ê¸ˆì§€
+        Task(const Task&) = delete;
+        Task& operator=(const Task&) = delete;
+
+        // ì´ë™ ìƒì„±ì
+        Task(Task&& other) noexcept : handle_(other.handle_) {
+            other.handle_ = nullptr;
+        }
+
+        // ì´ë™ í• ë‹¹ ì—°ì‚°ì
+        Task& operator=(Task&& other) noexcept {
+            if (this != &other) {
+                if (handle_) handle_.destroy();
+                handle_ = other.handle_;
+                other.handle_ = nullptr;
+            }
+            return *this;
+        }
 
         void get() {
             if (handle_.promise().exception_) {
@@ -306,19 +345,19 @@ namespace async_server_chain {
         void connect_to_server(std::shared_ptr<SampleServer<Req, Res>> server) {
             server_ = std::move(server);
 
-            // ¼­¹ö ÀÀ´ä Ã³¸® ¾²·¹µå ½ÃÀÛ
+            // ì„œë²„ ì‘ë‹µ ì²˜ë¦¬ ì“°ë ˆë“œ ì‹œì‘
             std::thread([this]() {
-                std::println("[RequestManager] ¼­¹ö ¿¬°áµÊ, ÀÀ´ä Ã³¸® ½ÃÀÛ");
+                std::println("[RequestManager] ì„œë²„ ì—°ê²°ë¨, ì‘ë‹µ ì²˜ë¦¬ ì‹œì‘");
 
                 process_responses();
 
-                std::println("[RequestManager] ¼­¹ö ÀÀ´ä Ã³¸® Á¾·á");
+                std::println("[RequestManager] ì„œë²„ ì‘ë‹µ ì²˜ë¦¬ ì¢…ë£Œ");
             }).detach();
         }
 
         void process_responses() {
             if (!server_) {
-                std::println("[RequestManager] ¼­¹ö°¡ ¿¬°áµÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+                std::println("[RequestManager] ì„œë²„ê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
                 return;
             }
 
@@ -333,14 +372,14 @@ namespace async_server_chain {
         }
 
         std::shared_ptr<Awaiter<Res>> async_request(Req req) {
-            std::println("[RequestManager] ºñµ¿±â ¿äÃ» ½ÃÀÛ: {}", req.command);
-            // ¿äÃ» ID »ı¼º
+            std::println("[RequestManager] ë¹„ë™ê¸° ìš”ì²­ ì‹œì‘: {}", req.command);
+            // ìš”ì²­ ID ìƒì„±
             auto awaiter = std::make_shared<Awaiter<Res>>();
             int id = add_awaiter(awaiter);
 
-            // ¿äÃ»À» SampleServer¿¡ Ãß°¡
+            // ìš”ì²­ì„ SampleServerì— ì¶”ê°€
             if (server_ == nullptr) {
-                throw std::runtime_error("¼­¹ö°¡ ¿¬°áµÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+                throw std::runtime_error("ì„œë²„ê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             }
 
             req.tid = id;
@@ -351,50 +390,50 @@ namespace async_server_chain {
     };
 
     Task<void> simple_test(std::shared_ptr<RequestManager<Request, Response>> manager) {
-        // ºñµ¿±â ¿äÃ» ¿¹½Ã
+        // ë¹„ë™ê¸° ìš”ì²­ ì˜ˆì‹œ
         Request req{ 1, "GET /data", "" };
         auto awaiter = manager->async_request(req);
-        // ÀÀ´ä ´ë±â ¹× Ã³¸®
-        std::println("[simple_test] ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}", 
+        // ì‘ë‹µ ëŒ€ê¸° ë° ì²˜ë¦¬
+        std::println("[simple_test] ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}", 
             req.tid, req.command, req.body);
         Response res = co_await *awaiter;
-        std::println("[simple_test] ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[simple_test] ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             res.tid, res.success, res.body);
 
-        // Ãß°¡ ¿äÃ» ¿¹½Ã
+        // ì¶”ê°€ ìš”ì²­ ì˜ˆì‹œ
         Request req2{ 2, "POST /data", "Sample Data" };
         auto awaiter2 = manager->async_request(req2);
-        std::println("[simple_test] µÎ ¹øÂ° ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}", 
+        std::println("[simple_test] ë‘ ë²ˆì§¸ ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}", 
             req2.tid, req2.command, req2.body);
         Response res2 = co_await *awaiter2;
-        std::println("[simple_test] µÎ ¹øÂ° ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[simple_test] ë‘ ë²ˆì§¸ ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             res2.tid, res2.success, res2.body);
 
-        std::println("[simple_test] Å×½ºÆ® ¿Ï·á");
+        std::println("[simple_test] í…ŒìŠ¤íŠ¸ ì™„ë£Œ");
 
         co_return;
     }
 
     Task<Response> get_user_info(std::shared_ptr<RequestManager<Request, Response>> manager, int user_id) {
-        std::println("[get_user_info] »ç¿ëÀÚ Á¤º¸ ¿äÃ» ½ÃÀÛ: user_id={}", user_id);
+        std::println("[get_user_info] ì‚¬ìš©ì ì •ë³´ ìš”ì²­ ì‹œì‘: user_id={}", user_id);
 
-        // GET /user_info ¿äÃ»
+        // GET /user_info ìš”ì²­
         Request req{ 2, "GET /user_info", std::to_string(user_id) };
         auto awaiter = manager->async_request(req);
-        std::println("[get_user_info] »ç¿ëÀÚ Á¤º¸ ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}", 
+        std::println("[get_user_info] ì‚¬ìš©ì ì •ë³´ ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}", 
             req.tid, req.command, req.body);
         Response res = co_await *awaiter;
-        std::println("[get_user_info] »ç¿ëÀÚ Á¤º¸ ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[get_user_info] ì‚¬ìš©ì ì •ë³´ ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             res.tid, res.success, res.body);
-        std::println("[get_user_info] »ç¿ëÀÚ Á¤º¸ ¿äÃ» ¿Ï·á");
+        std::println("[get_user_info] ì‚¬ìš©ì ì •ë³´ ìš”ì²­ ì™„ë£Œ");
 
-        // GET /user_profile ¿äÃ»
+        // GET /user_profile ìš”ì²­
         Request profile_req{ 3, "GET /user_profile", "" };
         auto profile_awaiter = manager->async_request(profile_req);
-        std::println("[get_user_info] »ç¿ëÀÚ ÇÁ·ÎÇÊ ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}",
+        std::println("[get_user_info] ì‚¬ìš©ì í”„ë¡œí•„ ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}",
             profile_req.tid, profile_req.command, profile_req.body);
         Response profile_res = co_await *profile_awaiter;
-        std::println("[get_user_info] »ç¿ëÀÚ ÇÁ·ÎÇÊ ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}",
+        std::println("[get_user_info] ì‚¬ìš©ì í”„ë¡œí•„ ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}",
             profile_res.tid, profile_res.success, profile_res.body);
 
         Response ret{ res.tid, res.success && profile_res.success, 
@@ -404,54 +443,54 @@ namespace async_server_chain {
     }
 
     Task<void> chain_test(std::shared_ptr<RequestManager<Request, Response>> manager) {
-        std::println("[chain_test] Ã¼ÀÎ Å×½ºÆ® ½ÃÀÛ");
+        std::println("[chain_test] ì²´ì¸ í…ŒìŠ¤íŠ¸ ì‹œì‘");
 
-        // GET /auth ¿äÃ»
+        // GET /auth ìš”ì²­
         Request auth_req{ 1, "GET /auth", "" };
         auto auth_awaiter = manager->async_request(auth_req);
-        std::println("[chain_test] ÀÎÁõ ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}", 
+        std::println("[chain_test] ì¸ì¦ ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}", 
             auth_req.tid, auth_req.command, auth_req.body);
         Response auth_res = co_await *auth_awaiter;
-        std::println("[chain_test] ÀÎÁõ ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[chain_test] ì¸ì¦ ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             auth_res.tid, auth_res.success, auth_res.body);
 
-        // simple_test ÇÔ¼ö È£Ãâ
-        std::println("[chain_test] simple_test È£Ãâ");
+        // simple_test í•¨ìˆ˜ í˜¸ì¶œ
+        std::println("[chain_test] simple_test í˜¸ì¶œ");
         auto simple_task = simple_test(manager);
-        // ÄÚ·çÆ¾À» ½ÃÀÛÇÏ°í ¿Ï·áµÉ ¶§±îÁö ´ë±â
+        // ì½”ë£¨í‹´ì„ ì‹œì‘í•˜ê³  ì™„ë£Œë  ë•Œê¹Œì§€ ëŒ€ê¸°
         co_await simple_task;
-        std::println("[chain_test] simple_test ¿Ï·á");
+        std::println("[chain_test] simple_test ì™„ë£Œ");
 
-        // get_user_info ÇÔ¼ö È£Ãâ
-        std::println("[chain_test] get_user_info È£Ãâ");
+        // get_user_info í•¨ìˆ˜ í˜¸ì¶œ
+        std::println("[chain_test] get_user_info í˜¸ì¶œ");
         auto user_info_task = get_user_info(manager, 42);
-        // ÄÚ·çÆ¾À» ½ÃÀÛÇÏ°í ¿Ï·áµÉ ¶§±îÁö ´ë±â
+        // ì½”ë£¨í‹´ì„ ì‹œì‘í•˜ê³  ì™„ë£Œë  ë•Œê¹Œì§€ ëŒ€ê¸°
         Response user_info_res = co_await user_info_task;
-        std::println("[chain_test] »ç¿ëÀÚ Á¤º¸ ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[chain_test] ì‚¬ìš©ì ì •ë³´ ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             user_info_res.tid, user_info_res.success, user_info_res.body);
 
-        // GET /role ¿äÃ»
+        // GET /role ìš”ì²­
         Request role_req{ 4, "GET /role", std::to_string(user_info_res.tid) };
         auto role_awaiter = manager->async_request(role_req);
-        std::println("[chain_test] ¿ªÇÒ ÀÀ´ä ´ë±â ¿äÃ»: tid={}, command={}, body={}", 
+        std::println("[chain_test] ì—­í•  ì‘ë‹µ ëŒ€ê¸° ìš”ì²­: tid={}, command={}, body={}", 
             role_req.tid, role_req.command, role_req.body);
         Response role_res = co_await *role_awaiter;
-        std::println("[chain_test] ¿ªÇÒ ÀÀ´ä ¼ö½Å: tid={}, success={}, body={}", 
+        std::println("[chain_test] ì—­í•  ì‘ë‹µ ìˆ˜ì‹ : tid={}, success={}, body={}", 
             role_res.tid, role_res.success, role_res.body);
 
-        std::println("[chain_test] Ã¼ÀÎ Å×½ºÆ® ¿Ï·á");
+        std::println("[chain_test] ì²´ì¸ í…ŒìŠ¤íŠ¸ ì™„ë£Œ");
 
         co_return;
     }
 
     void test() {
-        std::println("[async_server_chain] Å×½ºÆ® ½ÃÀÛ");
+        std::println("[async_server_chain] í…ŒìŠ¤íŠ¸ ì‹œì‘");
 
-        // SampleServer ÀÎ½ºÅÏ½º »ı¼º ¹× ½ÇÇà
+        // SampleServer ì¸ìŠ¤í„´ìŠ¤ ìƒì„± ë° ì‹¤í–‰
         auto server = std::make_shared<SampleServer<Request, Response>>();
         server->run();
 
-        // RequestManager ÀÎ½ºÅÏ½º »ı¼º ¹× ¼­¹ö ¿¬°á
+        // RequestManager ì¸ìŠ¤í„´ìŠ¤ ìƒì„± ë° ì„œë²„ ì—°ê²°
         auto manager = std::make_shared<RequestManager<Request, Response>>();
         manager->connect_to_server(server);
 
@@ -459,8 +498,8 @@ namespace async_server_chain {
         auto task = chain_test(manager);
         task.get();
 
-        std::this_thread::sleep_for(std::chrono::seconds(10)); // ¼­¹ö Á¾·á ´ë±â
+        std::this_thread::sleep_for(std::chrono::seconds(10)); // ì„œë²„ ì¢…ë£Œ ëŒ€ê¸°
 
-        std::println("[async_server_chain] Å×½ºÆ® ¿Ï·á");
+        std::println("[async_server_chain] í…ŒìŠ¤íŠ¸ ì™„ë£Œ");
     }
 }
